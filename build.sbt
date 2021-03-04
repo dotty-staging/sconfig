@@ -101,7 +101,7 @@ lazy val sconfig = crossProject(JVMPlatform, NativePlatform, JSPlatform)
   .crossType(CrossType.Full)
   .settings(
     scalacOptions ++= {
-      if (isDotty.value) dotcOpts else scalacOpts
+      if (scalaVersion.value.startsWith("3")) dotcOpts else scalacOpts
     },
     scala2or3Source,
     libraryDependencies += ("org.scala-lang.modules" %%% "scala-collection-compat" % scCompat)
@@ -110,9 +110,9 @@ lazy val sconfig = crossProject(JVMPlatform, NativePlatform, JSPlatform)
     crossScalaVersions := versionsJVM,
     sharedJvmNativeSource,
     libraryDependencies ++= Seq(
-      "io.crashbox"  %% "spray-json"     % "1.3.5-7" % Test,
+      ("io.crashbox"  %% "spray-json"     % "1.3.5-7" % Test).cross(CrossVersion.for3Use2_13),
       "com.novocode" % "junit-interface" % "0.11"    % Test
-    ).map(_.withDottyCompat(scalaVersion.value)),
+    ),
     Compile / compile / javacOptions ++= Seq(
       "-source",
       "1.8",
@@ -166,7 +166,7 @@ lazy val sharedJvmNativeSource: Seq[Setting[_]] = Def.settings(
 lazy val scala2or3Source: Seq[Setting[_]] = Def.settings(
   Compile / unmanagedSourceDirectories +=
     (ThisBuild / baseDirectory).value
-      / "sconfig" / { if (isDotty.value) "sharedScala3" else "sharedScala2" }
+      / "sconfig" / { if (scalaVersion.value.startsWith("3")) "sharedScala3" else "sharedScala2" }
       / "src" / "main" / "scala"
 )
 
