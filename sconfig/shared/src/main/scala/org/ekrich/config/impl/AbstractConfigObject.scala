@@ -21,7 +21,7 @@ object AbstractConfigObject {
   private def peekPath(
       self: AbstractConfigObject,
       path: Path
-  ): AbstractConfigValue =
+  ): AbstractConfigValue | Null =
     try {
       // we'll fail if anything along the path can't
       // be looked at without resolving.
@@ -42,7 +42,7 @@ object AbstractConfigObject {
     if (stack.isEmpty)
       throw new ConfigException.BugOrBroken("can't merge origins on empty list")
     val origins = new ju.ArrayList[ConfigOrigin]
-    var firstOrigin: ConfigOrigin = null
+    var firstOrigin: ConfigOrigin | Null = null
     var numMerged = 0
     for (v <- stack.asScala) {
       if (firstOrigin == null) firstOrigin = v.origin
@@ -95,7 +95,7 @@ abstract class AbstractConfigObject(_origin: ConfigOrigin)
 
   override def withValue(key: String, value: ConfigValue): AbstractConfigObject
 
-  private[impl] def withOnlyPathOrNull(path: Path): AbstractConfigObject
+  private[impl] def withOnlyPathOrNull(path: Path): AbstractConfigObject | Null
 
   private[impl] def withOnlyPath(path: Path): AbstractConfigObject
 
@@ -119,7 +119,7 @@ abstract class AbstractConfigObject(_origin: ConfigOrigin)
   final private[impl] def peekAssumingResolved(
       key: String,
       originalPath: Path
-  ): AbstractConfigValue =
+  ): AbstractConfigValue | Null =
     try {
       attemptPeekWithPartialResolve(key)
     } catch {
@@ -141,14 +141,14 @@ abstract class AbstractConfigObject(_origin: ConfigOrigin)
    */
   private[impl] def attemptPeekWithPartialResolve(
       key: String
-  ): AbstractConfigValue
+  ): AbstractConfigValue | Null
 
   /**
    * Looks up the path with no transformation or type conversion. Returns null
    * if the path is not found; throws ConfigException.NotResolved if we need to
    * go through an unresolved node to look up the path.
    */
-  private[impl] def peekPath(path: Path): AbstractConfigValue =
+  private[impl] def peekPath(path: Path): AbstractConfigValue | Null =
     AbstractConfigObject.peekPath(this, path)
 
   override def valueType: ConfigValueType = ConfigValueType.OBJECT
@@ -169,7 +169,7 @@ abstract class AbstractConfigObject(_origin: ConfigOrigin)
 
   override def mergedWithObject(
       fallback: AbstractConfigObject
-  ): AbstractConfigObject = null
+  ): AbstractConfigObject = null.asInstanceOf[AbstractConfigObject]
 
   override def withFallback(mergeable: ConfigMergeable): AbstractConfigObject =
     super.withFallback(mergeable).asInstanceOf[AbstractConfigObject]
@@ -177,9 +177,9 @@ abstract class AbstractConfigObject(_origin: ConfigOrigin)
   override def resolveSubstitutions(
       context: ResolveContext,
       source: ResolveSource
-  ): ResolveResult[_ <: AbstractConfigObject] = null
+  ): ResolveResult[_ <: AbstractConfigObject | Null] = null.asInstanceOf[ResolveResult[_ <: AbstractConfigObject | Null]]
 
-  override def relativized(prefix: Path): AbstractConfigObject = null
+  override def relativized(prefix: Path): AbstractConfigObject | Null = null
 
   override def get(key: Any): AbstractConfigValue
 

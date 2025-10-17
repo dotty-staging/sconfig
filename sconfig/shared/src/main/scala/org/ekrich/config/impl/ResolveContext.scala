@@ -13,7 +13,7 @@ object ResolveContext {
       value: AbstractConfigValue,
       root: AbstractConfigObject,
       options: ConfigResolveOptions
-  ): AbstractConfigValue = {
+  ): AbstractConfigValue | Null = {
     val source = new ResolveSource(root)
     val context =
       new ResolveContext(options, null /* restrictToChild */ )
@@ -37,14 +37,14 @@ private[impl] final class ResolveContext(
     // any sibling of an object we're traversing could
     // cause a cycle "by side effect"
     // CAN BE NULL for a full resolve.
-    val restrictToChild: Path,
+    val restrictToChild: Path | Null,
     // This is used for tracing and debugging and nice error messages;
     // contains every node as we call resolve on it.
     val resolveStack: ju.List[AbstractConfigValue],
     val cycleMarkers: ju.Set[AbstractConfigValue]
 ) {
 
-  def this(options: ConfigResolveOptions, restrictToChild: Path) = {
+  def this(options: ConfigResolveOptions, restrictToChild: Path | Null) = {
     // LinkedHashSet keeps the traversal order which is at least useful
     // in error messages if nothing else
     this(
@@ -90,7 +90,7 @@ private[impl] final class ResolveContext(
   }
   private def memoize(
       key: MemoKey,
-      value: AbstractConfigValue
+      value: AbstractConfigValue | Null
   ): ResolveContext = {
     val changed = memos.put(key, value)
     new ResolveContext(
@@ -105,7 +105,7 @@ private[impl] final class ResolveContext(
   private[impl] def isRestrictedToChild: Boolean = restrictToChild != null
 
   // restrictTo may be null to unrestrict
-  private[impl] def restrict(restrictTo: Path): ResolveContext =
+  private[impl] def restrict(restrictTo: Path | Null): ResolveContext =
     if (restrictTo eq restrictToChild) this
     else
       new ResolveContext(memos, options, restrictTo, resolveStack, cycleMarkers)
@@ -148,7 +148,7 @@ private[impl] final class ResolveContext(
   private[impl] def resolve(
       original: AbstractConfigValue,
       source: ResolveSource
-  ): ResolveResult[_ <: AbstractConfigValue] = {
+  ): ResolveResult[_ <: AbstractConfigValue | Null] = {
     if (ConfigImpl.traceSubstitutionsEnabled)
       ConfigImpl.trace(
         depth,
@@ -160,11 +160,11 @@ private[impl] final class ResolveContext(
   private def realResolve(
       original: AbstractConfigValue,
       source: ResolveSource
-  ): ResolveResult[_ <: AbstractConfigValue] = {
+  ): ResolveResult[_ <: AbstractConfigValue | Null] = {
     // a fully-resolved (no restrictToChild) object can satisfy a
     // request for a restricted object, so always check that first.
     val fullKey = new MemoKey(original, null)
-    var restrictedKey: MemoKey = null
+    var restrictedKey: MemoKey | Null = null
     var cached = memos.get(fullKey)
     // but if there was no fully-resolved object cached, we'll only
     // compute the restrictToChild object so use a more limited
@@ -207,7 +207,7 @@ private[impl] final class ResolveContext(
             .identityHashCode(resolved)
         )
       var withMemo = result.context
-      if (resolved == null || (resolved.resolveStatus eq ResolveStatus.RESOLVED)) {
+      if (resolved == null || (resolved.asInstanceOf[AbstractConfigValue].resolveStatus eq ResolveStatus.RESOLVED)) {
         // if the resolved object is fully resolved by resolving
         // only the restrictToChildOrNull, then it can be cached
         // under fullKey since the child we were restricted to

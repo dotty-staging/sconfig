@@ -17,19 +17,19 @@ object Token { // this is used for singleton tokens like COMMA or OPEN_CURLY
 
 class Token private[impl] (
     _tokenType: TokenType,
-    _origin: ConfigOrigin,
-    _tokenText: String,
-    debugString: String
+    _origin: ConfigOrigin | Null,
+    _tokenText: String | Null,
+    debugString: String | Null
 ) {
-  def this(_tokenType: TokenType, _origin: ConfigOrigin, _tokenText: String) =
+  def this(_tokenType: TokenType, _origin: ConfigOrigin | Null, _tokenText: String | Null) =
     this(_tokenType, _origin, _tokenText, null)
 
-  def this(_tokenType: TokenType, _origin: ConfigOrigin) =
+  def this(_tokenType: TokenType, _origin: ConfigOrigin | Null) =
     this(_tokenType, _origin, null)
 
   final private[impl] def tokenType: TokenType = _tokenType
 
-  def tokenText: String = _tokenText
+  def tokenText: String | Null = _tokenText
 
   // this is final because we don't always use the origin() accessor,
   // and we don't because it throws if origin is null
@@ -40,7 +40,7 @@ class Token private[impl] (
       throw new ConfigException.BugOrBroken(
         "tried to get origin from token that doesn't have one: " + this
       )
-    _origin
+    _origin.nn
   }
 
   final private[impl] def lineNumber =

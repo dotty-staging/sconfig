@@ -46,7 +46,7 @@ object ConfigConcatenation {
     // Since this depends on the type of two instances, I couldn't think
     // of much alternative to an instanceof chain. Visitors are sometimes
     // used for multiple dispatch but seems like overkill.
-    var joined: AbstractConfigValue = null
+    var joined: AbstractConfigValue | Null = null
     if (left.isInstanceOf[ConfigObject] && right.isInstanceOf[ConfigObject])
       joined = right.withFallback(left)
     else if (left.isInstanceOf[SimpleConfigList] &&
@@ -104,7 +104,7 @@ object ConfigConcatenation {
       }
       consolidated
     }
-  def concatenate(pieces: ju.List[AbstractConfigValue]): AbstractConfigValue = {
+  def concatenate(pieces: ju.List[AbstractConfigValue]): AbstractConfigValue | Null = {
     val consolidated = consolidate(pieces)
     if (consolidated.isEmpty) null
     else if (consolidated.size == 1) consolidated.get(0)
@@ -165,7 +165,7 @@ final class ConfigConcatenation(
   override def resolveSubstitutions(
       context: ResolveContext,
       source: ResolveSource
-  ): ResolveResult[_ <: AbstractConfigValue] = {
+  ): ResolveResult[_ <: AbstractConfigValue | Null] = {
     if (ConfigImpl.traceSubstitutionsEnabled) {
       val indent = context.depth + 2
       ConfigImpl.trace(
@@ -209,7 +209,7 @@ final class ConfigConcatenation(
         new ConfigConcatenation(this.origin, joined)
       )
     else if (joined.isEmpty) { // we had just a list of optional references using ${?}
-      ResolveResult.make(newContext, null)
+      ResolveResult.make[AbstractConfigValue | Null](newContext, null)
     } else if (joined.size == 1) ResolveResult.make(newContext, joined.get(0))
     else
       throw new ConfigException.BugOrBroken(
@@ -219,8 +219,8 @@ final class ConfigConcatenation(
   override def resolveStatus: ResolveStatus = ResolveStatus.UNRESOLVED
   override def replaceChild(
       child: AbstractConfigValue,
-      replacement: AbstractConfigValue
-  ): ConfigConcatenation = {
+      replacement: AbstractConfigValue | Null
+  ): ConfigConcatenation | Null = {
     val newPieces =
       AbstractConfigValue.replaceChildInList(pieces, child, replacement)
     if (newPieces == null) null else new ConfigConcatenation(origin, newPieces)

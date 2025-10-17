@@ -79,16 +79,16 @@ object SerializedConfigValue {
   @throws[IOException]
   private[impl] def writeOrigin(
       out: DataOutput,
-      origin: SimpleConfigOrigin,
-      baseOrigin: SimpleConfigOrigin
+      origin: SimpleConfigOrigin | Null,
+      baseOrigin: SimpleConfigOrigin | Null
   ): Unit = {
-    var m: ju.Map[SerializedField, AnyRef] = null
+    var m: ju.Map[SerializedField, AnyRef] | Null = null
     // to serialize a null origin, we write out no fields at all
     if (origin != null)
       m = origin.toFieldsDelta(baseOrigin)
     else
       m = ju.Collections.emptyMap[SerializedField, AnyRef]
-    for (e <- m.entrySet.asScala) {
+    for (e <- m.nn.entrySet.asScala) {
       val field = new FieldOut(e.getKey)
       val v = e.getValue
       writeOriginField(field.data, field.code, v)
@@ -101,14 +101,14 @@ object SerializedConfigValue {
   @throws[IOException]
   private[impl] def readOrigin(
       in: DataInput,
-      baseOrigin: SimpleConfigOrigin
-  ): SimpleConfigOrigin = {
+      baseOrigin: SimpleConfigOrigin | Null
+  ): SimpleConfigOrigin | Null = {
     import SerializedField._
     val m: ju.Map[SerializedField, AnyRef] = new ju.HashMap
     breakable {
       while (true) {
         val field: SerializedField = readCode(in)
-        val v: AnyRef = field match {
+        val v: AnyRef | Null = field match {
           case END_MARKER =>
             break() // break - was return SimpleConfigOrigin.fromBase(baseOrigin, m)
           case ORIGIN_DESCRIPTION =>
@@ -253,7 +253,7 @@ object SerializedConfigValue {
   private def writeValue(
       out: DataOutput,
       value: ConfigValue,
-      baseOrigin: SimpleConfigOrigin
+      baseOrigin: SimpleConfigOrigin | Null
   ): Unit = {
     val origin =
       new SerializedConfigValue.FieldOut(SerializedField.VALUE_ORIGIN)
@@ -271,10 +271,10 @@ object SerializedConfigValue {
   @throws[IOException]
   private def readValue(
       in: DataInput,
-      baseOrigin: SimpleConfigOrigin
+      baseOrigin: SimpleConfigOrigin | Null
   ): AbstractConfigValue = {
-    var value: AbstractConfigValue = null
-    var origin: SimpleConfigOrigin = null
+    var value: AbstractConfigValue | Null = null
+    var origin: SimpleConfigOrigin | Null = null
     breakable {
       while (true) {
         val code = readCode(in)
@@ -288,7 +288,7 @@ object SerializedConfigValue {
           if (origin == null)
             throw new IOException("Origin must be stored before value data")
           in.readInt
-          value = readValueData(in, origin)
+          value = readValueData(in, origin.nn)
         } else if (code eq SerializedField.VALUE_ORIGIN) {
           in.readInt
           origin = readOrigin(in, baseOrigin)
@@ -298,7 +298,7 @@ object SerializedConfigValue {
         }
       }
     }
-    value // prior to break above
+    value.nn // prior to break above
   }
   @throws[IOException]
   private def writeField(out: DataOutput, field: FieldOut): Unit = {
@@ -342,7 +342,7 @@ object SerializedConfigValue {
 class SerializedConfigValue() // this has to be public for the Java deserializer
     extends AbstractConfigValue(null)
     with Externalizable {
-  private var value: ConfigValue = null
+  private var value: ConfigValue = _
   private var wasConfig: Boolean = false
 
   def this(value: ConfigValue) = {

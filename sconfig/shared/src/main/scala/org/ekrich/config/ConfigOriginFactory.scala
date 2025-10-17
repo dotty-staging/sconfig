@@ -34,7 +34,7 @@ object ConfigOriginFactory {
    * @return
    *   a new origin
    */
-  def newSimple(description: String): ConfigOrigin =
+  def newSimple(description: String | Null): ConfigOrigin =
     ConfigImpl.newSimpleOrigin(description)
 
   /**

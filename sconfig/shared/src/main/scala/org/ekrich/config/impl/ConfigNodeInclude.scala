@@ -16,7 +16,7 @@ final class ConfigNodeInclude(
     tokens
   }
 
-  private[impl] def name: String = {
+  private[impl] def name: String | Null = {
     children.asScala.find(_.isInstanceOf[ConfigNodeSimpleValue]) match {
       case Some(node) =>
         Tokens

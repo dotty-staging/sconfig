@@ -28,7 +28,7 @@ object SimpleConfigOrigin {
       null
     )
   private[impl] def newFile(filename: String): SimpleConfigOrigin = {
-    var url: String = null
+    var url: String | Null = null
     try {
       val uri = new File(filename).toURI()
       url = new PlatformUri(uri).toURL().toExternalForm()
@@ -44,7 +44,7 @@ object SimpleConfigOrigin {
   }
   private[impl] def newResource(
       resource: String,
-      url: URL
+      url: URL | Null
   ): SimpleConfigOrigin = {
     val desc: String =
       if (url != null) resource + " @ " + url.toExternalForm() else resource
@@ -65,10 +65,10 @@ object SimpleConfigOrigin {
       a: SimpleConfigOrigin,
       b: SimpleConfigOrigin
   ): SimpleConfigOrigin = {
-    var mergedDesc: String = null
+    var mergedDesc: String | Null = null
     var mergedStartLine = 0
     var mergedEndLine = 0
-    var mergedComments: ju.List[String] = null
+    var mergedComments: ju.List[String] | Null = null
     val mergedType =
       if (a.originType eq b.originType) a.originType else OriginType.GENERIC
     // first use the "description" field which has no line numbers
@@ -274,7 +274,7 @@ object SimpleConfigOrigin {
   @throws[IOException]
   private[impl] def fromFields(
       m: ju.Map[SerializedField, AnyRef]
-  ): SimpleConfigOrigin = {
+  ): SimpleConfigOrigin | Null = {
     // we represent a null origin as one with no fields at all
     if (m.isEmpty) return null
     val description =
@@ -362,9 +362,9 @@ object SimpleConfigOrigin {
   }
   @throws[IOException]
   private[impl] def fromBase(
-      baseOrigin: SimpleConfigOrigin,
+      baseOrigin: SimpleConfigOrigin | Null,
       delta: ju.Map[SerializedField, AnyRef]
-  ): SimpleConfigOrigin = {
+  ): SimpleConfigOrigin | Null = {
     var baseFields =
       if (baseOrigin != null) baseOrigin.toFields
       else ju.Collections.emptyMap[SerializedField, AnyRef]
@@ -377,9 +377,9 @@ final class SimpleConfigOrigin protected (
     val _lineNumber: Int,
     val endLineNumber: Int,
     val originType: OriginType,
-    val urlOrNull: String,
-    val resourceOrNull: String,
-    val commentsOrNull: ju.List[String]
+    val urlOrNull: String | Null,
+    val resourceOrNull: String | Null,
+    val commentsOrNull: ju.List[String] | Null
 ) extends ConfigOrigin {
   if (_description == null)
     throw new ConfigException.BugOrBroken("description may not be null")
@@ -406,7 +406,7 @@ final class SimpleConfigOrigin protected (
       this.resourceOrNull,
       this.commentsOrNull
     )
-  override def withComments(comments: ju.List[String]): SimpleConfigOrigin =
+  override def withComments(comments: ju.List[String] | Null): SimpleConfigOrigin =
     if (ConfigImplUtil.equalsHandlingNull(comments, this.commentsOrNull)) this
     else
       new SimpleConfigOrigin(
@@ -476,20 +476,20 @@ final class SimpleConfigOrigin protected (
     h
   }
   override def toString: String = "ConfigOrigin(" + _description + ")"
-  override def filename: String =
+  override def filename: String | Null =
     if (originType eq OriginType.FILE)
       _description
     else if (urlOrNull != null) {
-      var url: URL = null
+      var url: URL | Null = null
       try url = new URL(urlOrNull)
       catch {
         case e: MalformedURLException =>
           return null
       }
-      if (url.getProtocol() == "file") url.getFile() else null
+      if (url.nn.getProtocol() == "file") url.nn.getFile() else null // Should not be null
     } else null
 
-  override def url: URL =
+  override def url: URL | Null =
     if (urlOrNull == null) null
     else
       try new URL(urlOrNull)
@@ -497,7 +497,7 @@ final class SimpleConfigOrigin protected (
         case e: MalformedURLException =>
           null
       }
-  override def resource: String = resourceOrNull
+  override def resource: String | Null = resourceOrNull
   override def lineNumber: Int = _lineNumber
   override def comments: ju.List[String] =
     if (commentsOrNull != null) ju.Collections.unmodifiableList(commentsOrNull)
@@ -521,7 +521,7 @@ final class SimpleConfigOrigin protected (
     m
   }
   private[impl] def toFieldsDelta(
-      baseOrigin: SimpleConfigOrigin
+      baseOrigin: SimpleConfigOrigin | Null
   ): ju.Map[SerializedField, AnyRef] = {
     var baseFields =
       if (baseOrigin != null) baseOrigin.toFields

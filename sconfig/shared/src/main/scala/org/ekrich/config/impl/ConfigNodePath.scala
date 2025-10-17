@@ -24,7 +24,7 @@ final class ConfigNodePath private[impl] (
       }
       if (periodCount == toRemove)
         return new ConfigNodePath(
-          path.subPath(toRemove),
+          path.subPath(toRemove).nn,
           tokensCopy.subList(i + 1, tokensCopy.size)
         )
 
@@ -41,7 +41,7 @@ final class ConfigNodePath private[impl] (
       if (Tokens.isUnquotedText(tokensCopy.get(i)) && tokensCopy
             .get(i)
             .tokenText == ".")
-        return new ConfigNodePath(path.subPath(0, 1), tokensCopy.subList(0, i))
+        return new ConfigNodePath(path.subPath(0, 1).nn, tokensCopy.subList(0, i))
 
       i += 1
     }

@@ -45,8 +45,8 @@ object AbstractConfigValue {
   def replaceChildInList(
       list: ju.List[AbstractConfigValue],
       child: AbstractConfigValue,
-      replacement: AbstractConfigValue
-  ): ju.List[AbstractConfigValue] = {
+      replacement: AbstractConfigValue | Null
+  ): ju.List[AbstractConfigValue] | Null = {
     var i = 0
     while (i < list.size && (list.get(i) != child)) {
       i += 1
@@ -93,18 +93,18 @@ object AbstractConfigValue {
     // keyOrNull is null for non-objects
     @throws[Exception]
     def modifyChildMayThrow(
-        keyOrNull: String,
+        keyOrNull: String | Null,
         v: AbstractConfigValue
-    ): AbstractConfigValue
+    ): AbstractConfigValue | Null
   }
 
   private[impl] abstract class NoExceptionsModifier
       extends AbstractConfigValue.Modifier {
     @throws[Exception]
     override final def modifyChildMayThrow(
-        keyOrNull: String,
+        keyOrNull: String | Null,
         v: AbstractConfigValue
-    ): AbstractConfigValue =
+    ): AbstractConfigValue | Null =
       try modifyChild(keyOrNull, v)
       catch {
         case e: RuntimeException =>
@@ -114,14 +114,14 @@ object AbstractConfigValue {
       }
 
     private[impl] def modifyChild(
-        keyOrNull: String,
+        keyOrNull: String | Null,
         v: AbstractConfigValue
-    ): AbstractConfigValue
+    ): AbstractConfigValue | Null
   }
 }
 
 // TODO: this whole origin thing could use cleaning up from the top down
-abstract class AbstractConfigValue private[impl] (val _origin: ConfigOrigin)
+abstract class AbstractConfigValue private[impl] (val _origin: ConfigOrigin | Null)
     extends ConfigValue
     with MergeableValue {
   override def origin: SimpleConfigOrigin =
@@ -141,7 +141,7 @@ abstract class AbstractConfigValue private[impl] (val _origin: ConfigOrigin)
   def resolveSubstitutions(
       context: ResolveContext,
       source: ResolveSource
-  ): ResolveResult[_ <: AbstractConfigValue] =
+  ): ResolveResult[_ <: AbstractConfigValue | Null] =
     ResolveResult.make(context, this)
 
   private[impl] def resolveStatus = ResolveStatus.RESOLVED
@@ -158,7 +158,7 @@ abstract class AbstractConfigValue private[impl] (val _origin: ConfigOrigin)
    * @return
    *   value relativized to the given path or the same value if nothing to do
    */
-  private[impl] def relativized(prefix: Path) = this
+  private[impl] def relativized(prefix: Path): AbstractConfigValue | Null = this
 
   override def toFallbackValue: AbstractConfigValue = this
 
@@ -320,7 +320,7 @@ abstract class AbstractConfigValue private[impl] (val _origin: ConfigOrigin)
       sb: jl.StringBuilder,
       indent: Int,
       atRoot: Boolean,
-      atKey: String,
+      atKey: String | Null,
       options: ConfigRenderOptions
   ): Unit = {
     if (atKey != null) {
@@ -365,7 +365,7 @@ abstract class AbstractConfigValue private[impl] (val _origin: ConfigOrigin)
   // It only works for primitive values (that would be a single token)
   // which are auto-converted to strings when concatenating with
   // other strings or by the DefaultTransformer.
-  private[impl] def transformToString: String = null
+  private[impl] def transformToString: String | Null = null
 
   private[impl] def atKey(origin: ConfigOrigin, key: String): SimpleConfig = {
     val m =

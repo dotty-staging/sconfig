@@ -19,7 +19,7 @@ final class ConfigNodeObject private[impl] (
         else if (desiredPath.startsWith(path)) {
           field.value match {
             case obj: ConfigNodeObject =>
-              val remainingPath = desiredPath.subPath(path.length)
+              val remainingPath = desiredPath.subPath(path.length).nn
               if (obj.hasValue(remainingPath)) true
               else false
             case _ => false
@@ -31,14 +31,14 @@ final class ConfigNodeObject private[impl] (
 
   protected def changeValueOnPath(
       desiredPath: Path,
-      value: AbstractConfigNodeValue,
-      flavor: ConfigSyntax
+      value: AbstractConfigNodeValue | Null,
+      flavor: ConfigSyntax | Null
   ): ConfigNodeObject = {
     val childrenCopy =
       new ju.ArrayList[AbstractConfigNode](children)
     var seenNonMatching = false
     // Copy the value so we can change it to null but not modify the original parameter
-    var valueCopy = value
+    var valueCopy: AbstractConfigNodeValue | Null = value
     var i = childrenCopy.size - 1
     while (i >= 0) {
       breakable {
@@ -79,7 +79,7 @@ final class ConfigNodeObject private[impl] (
           }
         } else if (key == desiredPath) {
           seenNonMatching = true
-          var indentedValue: AbstractConfigNodeValue = null
+          var indentedValue: AbstractConfigNodeValue | Null = null
           val before =
             if (i - 1 > 0) childrenCopy.get(i - 1) else null
           if (value.isInstanceOf[ConfigNodeComplexValue] && before
@@ -90,12 +90,12 @@ final class ConfigNodeObject private[impl] (
             indentedValue =
               value.asInstanceOf[ConfigNodeComplexValue].indentText(before)
           else indentedValue = value
-          childrenCopy.set(i, node.replaceValue(indentedValue))
+          childrenCopy.set(i, node.replaceValue(indentedValue.nn))
           valueCopy = null
         } else if (desiredPath.startsWith(key)) {
           seenNonMatching = true
           if (node.value.isInstanceOf[ConfigNodeObject]) {
-            val remainingPath = desiredPath.subPath(key.length)
+            val remainingPath = desiredPath.subPath(key.length).nn
             childrenCopy.set(
               i,
               node.replaceValue(
@@ -123,7 +123,7 @@ final class ConfigNodeObject private[impl] (
   def setValueOnPath(
       desiredPath: String,
       value: AbstractConfigNodeValue,
-      flavor: ConfigSyntax
+      flavor: ConfigSyntax | Null
   ): ConfigNodeObject = {
     val path = PathParser.parsePathNode(desiredPath, flavor)
     setValueOnPath(path, value, flavor)
@@ -132,7 +132,7 @@ final class ConfigNodeObject private[impl] (
   private def setValueOnPath(
       desiredPath: ConfigNodePath,
       value: AbstractConfigNodeValue,
-      flavor: ConfigSyntax
+      flavor: ConfigSyntax | Null
   ): ConfigNodeObject = {
     val node =
       changeValueOnPath(desiredPath.value, value, flavor)
@@ -192,7 +192,7 @@ final class ConfigNodeObject private[impl] (
                 beforeLast.asInstanceOf[ConfigNodeSingleToken].token
               ))
           indent =
-            beforeLast.asInstanceOf[ConfigNodeSingleToken].token.tokenText
+            beforeLast.asInstanceOf[ConfigNodeSingleToken].token.tokenText.nn
         indent += "  "
         indentation.add(
           new ConfigNodeSingleToken(Tokens.newIgnoredWhitespace(null, indent))
@@ -207,13 +207,13 @@ final class ConfigNodeObject private[impl] (
   protected def addValueOnPath(
       desiredPath: ConfigNodePath,
       value: AbstractConfigNodeValue,
-      flavor: ConfigSyntax
+      flavor: ConfigSyntax | Null
   ): ConfigNodeObject = {
     val path = desiredPath.value
     val childrenCopy = new ju.ArrayList[AbstractConfigNode](children)
     val indentationCopy = new ju.ArrayList[AbstractConfigNode](indentation)
     // If the value we're inserting is a complex value, we'll need to indent it for insertion
-    var indentedValue: AbstractConfigNodeValue = null
+    var indentedValue: AbstractConfigNodeValue | Null = null
     if (value.isInstanceOf[ConfigNodeComplexValue] && !indentationCopy.isEmpty)
       indentedValue = value
         .asInstanceOf[ConfigNodeComplexValue]
@@ -358,7 +358,7 @@ final class ConfigNodeObject private[impl] (
 
   def removeValueOnPath(
       desiredPath: String,
-      flavor: ConfigSyntax
+      flavor: ConfigSyntax | Null
   ): ConfigNodeObject = {
     val path = PathParser.parsePathNode(desiredPath, flavor).value
     changeValueOnPath(path, null, flavor)

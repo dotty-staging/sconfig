@@ -188,7 +188,7 @@ abstract trait TestUtils {
     // be sure we can still deserialize the old one
     val inStream = new ByteArrayInputStream(decodeLegibleBinary(expectedHex))
     var failure: Option[Exception] = None
-    var inObjectStream: ObjectInputStream = null
+    var inObjectStream: ObjectInputStream | Null = null
     val deserialized =
       try {
         inObjectStream = new ObjectInputStream(inStream) // this can throw too

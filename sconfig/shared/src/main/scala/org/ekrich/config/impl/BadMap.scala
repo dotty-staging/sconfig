@@ -87,7 +87,7 @@ final class BadMap[K, V] private (
 
   private[impl] def copyingPut(k: K, v: V) = {
     val newSize = size + 1
-    var newEntries: Array[BadMap.Entry] = null
+    var newEntries: Array[BadMap.Entry] | Null = null
     if (newSize > entries.length) {
       // nextPrime doesn't always return a prime larger than
       // we passed in, so this block may not actually change

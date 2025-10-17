@@ -11,7 +11,7 @@ import org.ekrich.config.ConfigValueType
 
 /* FIXME the way the subclasses of Token are private with static isFoo and accessors is kind of ridiculous. */
 object Tokens {
-  class Value private[impl] (val value: AbstractConfigValue, origText: String)
+  class Value private[impl] (val value: AbstractConfigValue, origText: String | Null)
       extends Token(TokenType.VALUE, value.origin, origText) {
     def this(value: AbstractConfigValue) = this(value, null)
 
@@ -28,7 +28,7 @@ object Tokens {
     override def hashCode: Int = 41 * (41 + super.hashCode) + value.hashCode
   }
 
-  private[Tokens] class Line private[impl] (origin: ConfigOrigin)
+  private[Tokens] class Line private[impl] (origin: ConfigOrigin | Null)
       extends Token(TokenType.NEWLINE, origin) {
     override def toString: String = "'\\n'@" + lineNumber
     override def canEqual(other: Any): Boolean =
@@ -58,7 +58,7 @@ object Tokens {
   }
 
   private[Tokens] class IgnoredWhitespace private[impl] (
-      origin: ConfigOrigin,
+      origin: ConfigOrigin | Null,
       val value: String
   ) extends Token(TokenType.IGNORED_WHITESPACE, origin) {
     override def toString(): String = "'" + value + "' (WHITESPACE)"
@@ -77,7 +77,7 @@ object Tokens {
       val what: String,
       val message: String,
       val suggestQuotes: Boolean,
-      val cause: Throwable
+      val cause: Throwable | Null
   ) extends Token(TokenType.PROBLEM, origin) {
     override def toString(): String = {
       val sb = new StringBuilder
@@ -177,7 +177,7 @@ object Tokens {
     override def hashCode(): Int = 41 * (41 + super.hashCode) + value.hashCode
   }
 
-  def isValue(token: Token) = token.isInstanceOf[Tokens.Value]
+  def isValue(token: Token | Null) = token.isInstanceOf[Tokens.Value]
   def getValue(token: Token) =
     if (token.isInstanceOf[Tokens.Value])
       token.asInstanceOf[Tokens.Value].value
@@ -271,13 +271,13 @@ object Tokens {
     Token.newWithoutOrigin(TokenType.CLOSE_SQUARE, "']'", "]")
   val PLUS_EQUALS =
     Token.newWithoutOrigin(TokenType.PLUS_EQUALS, "'+='", "+=")
-  def newLine(origin: ConfigOrigin) = new Tokens.Line(origin)
+  def newLine(origin: ConfigOrigin | Null) = new Tokens.Line(origin)
   def newProblem(
       origin: ConfigOrigin,
       what: String,
       message: String,
       suggestQuotes: Boolean,
-      cause: Throwable
+      cause: Throwable | Null
   ) =
     new Tokens.Problem(origin, what, message, suggestQuotes, cause)
   def newCommentDoubleSlash(origin: ConfigOrigin, text: String) =
@@ -286,7 +286,7 @@ object Tokens {
     new Comment.HashComment(origin, text)
   def newUnquotedText(origin: ConfigOrigin, s: String) =
     new Tokens.UnquotedText(origin, s)
-  def newIgnoredWhitespace(origin: ConfigOrigin, s: String) =
+  def newIgnoredWhitespace(origin: ConfigOrigin | Null, s: String) =
     new Tokens.IgnoredWhitespace(origin, s)
   def newSubstitution(
       origin: ConfigOrigin,

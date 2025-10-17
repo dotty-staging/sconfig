@@ -27,7 +27,7 @@ import org.ekrich.config.ConfigValue
  */
 object ConfigImpl {
   private[impl] class LoaderCache private[impl] () {
-    private[impl] var currentSystemProperties: Config = null
+    private[impl] var currentSystemProperties: Config | Null = null
     private var currentLoader = new WeakReference[ClassLoader](null)
     private val cache = new ju.HashMap[String, Config]
 
@@ -88,14 +88,14 @@ object ConfigImpl {
       key: String,
       updater: Callable[Config]
   ): Config = {
-    var cache: LoaderCache = null
+    var cache: LoaderCache | Null = null
     try {
       cache = LoaderCacheHolder.cache
     } catch {
       case e: ExceptionInInitializerError =>
         throw ConfigImplUtil.extractInitializerError(e)
     }
-    cache.getOrElseUpdate(loader, key, updater)
+    cache.nn.getOrElseUpdate(loader, key, updater)
   }
 
   private[impl] class FileNameSource extends SimpleIncluder.NameSource {
@@ -150,7 +150,7 @@ object ConfigImpl {
   }
 
   private[impl] def emptyObject(
-      originDescription: String
+      originDescription: String | Null
   ): AbstractConfigObject = {
     val origin =
       if (originDescription != null)
@@ -159,7 +159,7 @@ object ConfigImpl {
     emptyObject(origin)
   }
 
-  def emptyConfig(originDescription: String): Config =
+  def emptyConfig(originDescription: String | Null): Config =
     emptyObject(originDescription).toConfig
 
   private[impl] def empty(origin: ConfigOrigin): AbstractConfigObject =
@@ -188,25 +188,25 @@ object ConfigImpl {
         ju.Collections.emptyList[AbstractConfigValue]
       )
 
-  private def emptyObject(origin: ConfigOrigin): AbstractConfigObject = {
+  private def emptyObject(origin: ConfigOrigin | Null): AbstractConfigObject = {
     // we want null origin to go to SimpleConfigObject.empty() to get the
     // origin "empty config" rather than "hardcoded value"
     if (origin == defaultValueOrigin) defaultEmptyObject
     else SimpleConfigObject.empty(origin)
   }
 
-  private def valueOrigin(originDescription: String): ConfigOrigin =
+  private def valueOrigin(originDescription: String | Null): ConfigOrigin =
     if (originDescription == null) defaultValueOrigin
     else SimpleConfigOrigin.newSimple(originDescription)
 
-  def fromAnyRef(obj: AnyRef, originDescription: String): ConfigValue = {
+  def fromAnyRef(obj: AnyRef, originDescription: String | Null): ConfigValue = {
     val origin = valueOrigin(originDescription)
     fromAnyRef(obj, origin, FromMapMode.KEYS_ARE_KEYS)
   }
 
   def fromPathMap(
       pathMap: ju.Map[String, _],
-      originDescription: String
+      originDescription: String | Null
   ): ConfigObject = {
     val origin = valueOrigin(originDescription)
     fromAnyRef(pathMap, origin, FromMapMode.KEYS_ARE_PATHS)
@@ -465,7 +465,7 @@ object ConfigImpl {
     if (newMessage == original.getMessage) original
     else new ConfigException.NotResolved(newMessage, original)
   }
-  def newSimpleOrigin(description: String): ConfigOrigin =
+  def newSimpleOrigin(description: String | Null): ConfigOrigin =
     if (description == null) defaultValueOrigin
     else SimpleConfigOrigin.newSimple(description)
   def newFileOrigin(filename: String): ConfigOrigin =

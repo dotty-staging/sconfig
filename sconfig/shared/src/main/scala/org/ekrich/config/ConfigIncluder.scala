@@ -49,5 +49,5 @@ trait ConfigIncluder {
    * @return
    *   a non-null ConfigObject
    */
-  def include(context: ConfigIncludeContext, what: String): ConfigObject
+  def include(context: ConfigIncludeContext, what: String | Null): ConfigObject
 }

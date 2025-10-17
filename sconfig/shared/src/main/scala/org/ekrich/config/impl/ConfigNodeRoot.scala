@@ -26,8 +26,8 @@ final class ConfigNodeRoot private[impl] (
 
   private[impl] def setValue(
       desiredPath: String,
-      value: AbstractConfigNodeValue,
-      flavor: ConfigSyntax
+      value: AbstractConfigNodeValue | Null,
+      flavor: ConfigSyntax | Null
   ): ConfigNodeRoot = {
     val childrenCopy =
       new ju.ArrayList[AbstractConfigNode](children)

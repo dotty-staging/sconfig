@@ -5,7 +5,7 @@ package org.ekrich.config.impl
  */
 final class MemoKey private[impl] (
     val value: AbstractConfigValue,
-    val restrictToChildOrNull: Path
+    val restrictToChildOrNull: Path | Null
 ) {
   override final def hashCode: Int = {
     val h = System.identityHashCode(value)

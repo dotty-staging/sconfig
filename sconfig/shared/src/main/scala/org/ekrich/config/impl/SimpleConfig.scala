@@ -39,14 +39,14 @@ import org.ekrich.config.ConfigValueType
 object SimpleConfig {
   private def findPaths(
       entries: ju.Set[ju.Map.Entry[String, ConfigValue]],
-      parent: Path,
+      parent: Path | Null,
       obj: AbstractConfigObject
   ): Unit = {
     for (entry <- obj.entrySet.asScala) {
       val elem = entry.getKey
       val v = entry.getValue
       var path = Path.newKey(elem)
-      if (parent != null) path = path.prepend(parent)
+      if (parent != null) path = path.prepend(parent).nn
       if (v.isInstanceOf[AbstractConfigObject])
         findPaths(entries, path, v.asInstanceOf[AbstractConfigObject])
       else if (v.isInstanceOf[ConfigNull]) {
@@ -62,7 +62,7 @@ object SimpleConfig {
   }
   private def throwIfNull(
       v: AbstractConfigValue,
-      expected: ConfigValueType,
+      expected: ConfigValueType | Null,
       originalPath: Path
   ): AbstractConfigValue =
     if (v.valueType eq ConfigValueType.NULL)
@@ -87,7 +87,7 @@ object SimpleConfig {
   private def findKeyOrNull(
       self: AbstractConfigObject,
       key: String,
-      expected: ConfigValueType,
+      expected: ConfigValueType | Null,
       originalPath: Path
   ): AbstractConfigValue = {
     var v = self.peekAssumingResolved(key, originalPath)
@@ -107,7 +107,7 @@ object SimpleConfig {
   private def findOrNull(
       self: AbstractConfigObject,
       path: Path,
-      expected: ConfigValueType,
+      expected: ConfigValueType | Null,
       originalPath: Path
   ): AbstractConfigValue =
     try {
@@ -119,7 +119,7 @@ object SimpleConfig {
           self,
           key,
           ConfigValueType.OBJECT,
-          originalPath.subPath(0, originalPath.length - next.length)
+          originalPath.subPath(0, originalPath.length - next.length).nn
         ).asInstanceOf[AbstractConfigObject]
         assert(o != null) // missing was supposed to throw
         findOrNull(o, next, expected, originalPath)
@@ -167,7 +167,7 @@ object SimpleConfig {
     var unitString = originalUnitString
     val numberString =
       ConfigImplUtil.unicodeTrim(s.substring(0, s.length - unitString.length))
-    var units: ChronoUnit = null
+    var units: ChronoUnit | Null = null
     // this would be caught later anyway, but the error message
     // is more helpful if we check it here.
     if (numberString.length == 0)
@@ -251,7 +251,7 @@ object SimpleConfig {
     var unitString = originalUnitString
     val numberString =
       ConfigImplUtil.unicodeTrim(s.substring(0, s.length - unitString.length))
-    var units: TimeUnit = null
+    var units: TimeUnit | Null = null
 
     // this would be caught later anyway, but the error message
     // is more helpful if we check it here.
@@ -344,7 +344,7 @@ object SimpleConfig {
         "Could not parse size-in-bytes unit '" + unitString + "' (try k, K, kB, KiB, kilobytes, kibibytes)"
       )
     try {
-      var result: BigInteger = null
+      var result: BigInteger | Null = null
       // possible precision loss; otherwise as a double.
       if (numberString.matches("[0-9]+"))
         result = units.bytes.multiply(new BigInteger(numberString))
@@ -353,7 +353,7 @@ object SimpleConfig {
           new BigDecimal(units.bytes).multiply(new BigDecimal(numberString))
         result = resultDecimal.toBigInteger
       }
-      if (result.bitLength < 64) result.longValue
+      if (result.nn.bitLength < 64) result.nn.longValue
       else
         throw new ConfigException.BadValue(
           originForException,
@@ -491,7 +491,7 @@ object SimpleConfig {
   }
   // path is null if we're at the root
   private def checkValidObject(
-      path: Path,
+      path: Path | Null,
       reference: AbstractConfigObject,
       value: AbstractConfigObject,
       accumulator: ju.List[ConfigException.ValidationProblem]
@@ -499,7 +499,7 @@ object SimpleConfig {
     for (entry <- reference.entrySet.asScala) {
       val key = entry.getKey
       val childPath: Path =
-        if (path != null) Path.newKey(key).prepend(path) else Path.newKey(key)
+        if (path != null) Path.newKey(key).prepend(path).nn else Path.newKey(key)
       val v = value.get(key)
       if (v == null)
         addMissing(accumulator, entry.getValue, childPath, value.origin)
@@ -625,7 +625,7 @@ final class SimpleConfig private[impl] (val confObj: AbstractConfigObject)
   }
   private def hasPathPeek(pathExpression: String) = {
     val path = Path.newPath(pathExpression)
-    var peeked: AbstractConfigValue = null
+    var peeked: AbstractConfigValue | Null = null
     try peeked = confObj.peekPath(path)
     catch {
       case e: ConfigException.NotResolved =>
@@ -649,7 +649,7 @@ final class SimpleConfig private[impl] (val confObj: AbstractConfigObject)
   }
   private[impl] def find(
       pathExpression: Path,
-      expected: ConfigValueType,
+      expected: ConfigValueType | Null,
       originalPath: Path
   ): AbstractConfigValue =
     SimpleConfig.throwIfNull(
@@ -659,20 +659,20 @@ final class SimpleConfig private[impl] (val confObj: AbstractConfigObject)
     )
   private[impl] def find(
       pathExpression: String,
-      expected: ConfigValueType
+      expected: ConfigValueType | Null
   ): AbstractConfigValue = {
     val path = Path.newPath(pathExpression)
     find(path, expected, path)
   }
   private def findOrNull(
       pathExpression: Path,
-      expected: ConfigValueType,
+      expected: ConfigValueType | Null,
       originalPath: Path
   ): AbstractConfigValue =
     SimpleConfig.findOrNull(confObj, pathExpression, expected, originalPath)
   private def findOrNull(
       pathExpression: String,
-      expected: ConfigValueType
+      expected: ConfigValueType | Null
   ): AbstractConfigValue = {
     val path = Path.newPath(pathExpression)
     findOrNull(path, expected, path)
@@ -716,12 +716,12 @@ final class SimpleConfig private[impl] (val confObj: AbstractConfigObject)
     obj
   }
   override def getConfig(path: String): SimpleConfig = getObject(path).toConfig
-  override def getAnyRef(path: String): AnyRef = {
+  override def getAnyRef(path: String): AnyRef | Null = {
     val v = find(path, null)
     v.unwrapped
   }
   override def getBytes(path: String): jl.Long = {
-    var size: jl.Long = null
+    var size: jl.Long | Null = null
     try size = getLong(path)
     catch {
       case e: ConfigException.WrongType =>
@@ -732,7 +732,7 @@ final class SimpleConfig private[impl] (val confObj: AbstractConfigObject)
           path
         )
     }
-    size
+    size.nn
   }
   override def getMemorySize(path: String): ConfigMemorySize =
     ConfigMemorySize.ofBytes(getBytes(path))
@@ -984,7 +984,7 @@ final class SimpleConfig private[impl] (val confObj: AbstractConfigObject)
     41 * confObj.hashCode
   }
   override def toString: String = "Config(" + confObj.toString + ")"
-  private def peekPath(path: Path): AbstractConfigValue = root.peekPath(path)
+  private def peekPath(path: Path): AbstractConfigValue | Null = root.peekPath(path)
   override def isResolved: Boolean =
     root.resolveStatus eq ResolveStatus.RESOLVED
 

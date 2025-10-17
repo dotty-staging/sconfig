@@ -43,7 +43,7 @@ object ConfigResolveOptions {
    * Singleton resolver that never resolves paths.
    */
   private val NULL_RESOLVER = new ConfigResolver() {
-    override def lookup(path: String): ConfigValue = null
+    override def lookup(path: String): ConfigValue | Null = null
     override def withFallback(fallback: ConfigResolver): ConfigResolver =
       fallback
   }

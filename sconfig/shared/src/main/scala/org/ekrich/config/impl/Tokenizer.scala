@@ -32,7 +32,7 @@ object Tokenizer {
    * Tokenizes a Reader. Does not close the reader; you have to arrange to do
    * that after you're done with the returned iterator.
    */
-  def tokenize(origin: ConfigOrigin, input: Reader, flavor: ConfigSyntax) =
+  def tokenize(origin: ConfigOrigin, input: Reader, flavor: ConfigSyntax | Null) =
     new Tokenizer.TokenIterator(origin, input, flavor ne ConfigSyntax.JSON)
 
   private[impl] def render(tokens: ju.Iterator[Token]) = {
@@ -81,9 +81,9 @@ object Tokenizer {
       private def createWhitespaceTokenFromSaver(
           baseOrigin: ConfigOrigin,
           lineNumber: Int
-      ): Token = {
+      ): Token | Null = {
         if (whitespace.length > 0) {
-          var t: Token = null
+          var t: Token | Null = null
           if (lastTokenWasSimpleValue)
             t = Tokens.newUnquotedText(
               lineOrigin(baseOrigin, lineNumber),
@@ -109,7 +109,7 @@ object Tokenizer {
         origin: ConfigOrigin,
         what: String,
         message: String,
-        cause: Throwable
+        cause: Throwable | Null
     ): ProblemException =
       problem(origin, what, message, false, cause)
     private def problem(
@@ -117,7 +117,7 @@ object Tokenizer {
         what: String,
         message: String,
         suggestQuotes: Boolean,
-        cause: Throwable
+        cause: Throwable | Null
     ): ProblemException = {
       if (what == null || message == null)
         throw new ConfigException.BugOrBroken(
@@ -228,19 +228,19 @@ object Tokenizer {
     private def problem(
         what: String,
         message: String,
-        cause: Throwable
+        cause: Throwable | Null
     ): ProblemException =
       TokenIterator.problem(lineOrigin, what, message, cause)
     private def problem(
         what: String,
         message: String,
         suggestQuotes: Boolean,
-        cause: Throwable
+        cause: Throwable | Null
     ): ProblemException =
       TokenIterator.problem(lineOrigin, what, message, suggestQuotes, cause)
 
     // ONE char has always been consumed, either the # or the first /, but not both slashes
-    private def pullComment(firstChar: Int): Token = {
+    private def pullComment(firstChar: Int): Token | Null = {
       var doubleSlash = false
       if (firstChar == '/') {
         val discard = nextCharRaw
@@ -251,7 +251,7 @@ object Tokenizer {
         doubleSlash = true
       }
       val sb = new jl.StringBuilder
-      var token: Token = null
+      var token: Token | Null = null
       breakable {
         while (true) {
           val c = nextCharRaw
@@ -277,7 +277,7 @@ object Tokenizer {
     private def pullUnquotedText: Token = {
       val origin = lineOrigin
       val sb = new jl.StringBuilder
-      var t: Token = null
+      var t: Token | Null = null
       var c = nextCharRaw
       var retToken = false
       breakable {
@@ -320,7 +320,7 @@ object Tokenizer {
         val s = sb.toString
         t = Tokens.newUnquotedText(origin, s)
       }
-      t
+      t.nn // Should not be null 
     }
     @throws[ProblemException]
     private def pullNumber(firstChar: Int) = {
@@ -518,7 +518,7 @@ object Tokenizer {
       val saver =
         new TokenIterator.WhitespaceSaver
       val expression = new ju.ArrayList[Token]
-      var t: Token = null
+      var t: Token | Null = null
       breakable {
         while ({
           t = pullNextToken(saver)
@@ -533,7 +533,7 @@ object Tokenizer {
               "Substitution ${ was not closed with a }"
             )
           } else {
-            val whitespace = saver.check(t, origin, lineNumber)
+            val whitespace = saver.check(t.nn, origin, lineNumber)
             if (whitespace != null) expression.add(whitespace)
             expression.add(t)
           }
@@ -552,7 +552,7 @@ object Tokenizer {
         lineOrigin = origin.withLineNumber(lineNumber)
         line
       } else {
-        var t: Token = null
+        var t: Token | Null = null
         if (startOfComment(c)) t = pullComment(c)
         else {
           c match {

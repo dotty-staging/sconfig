@@ -14,5 +14,5 @@ trait ReplaceableMergeStack extends Container {
   def makeReplacement(
       context: ResolveContext,
       skipping: Int
-  ): AbstractConfigValue
+  ): AbstractConfigValue | Null
 }

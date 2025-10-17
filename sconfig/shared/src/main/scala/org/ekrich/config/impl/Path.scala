@@ -12,7 +12,7 @@ object Path {
   private[impl] def hasFunkyChars(s: String): Boolean =
     s.exists(c => !c.isLetterOrDigit && c != '-' && c != '_')
 
-  def newKey(key: String): Path = new Path(key, null: Path)
+  def newKey(key: String): Path = new Path(key, null: Path | Null)
 
   def newPath(path: String): Path = PathParser.parsePath(path)
 
@@ -25,7 +25,7 @@ object Path {
    * @return
    *   path minus the first element or null if no more elements
    */
-  private def create(elements: String*): (String, Path) = {
+  private def create(elements: String*): (String | Null, Path | Null) = {
     val first = if (elements.length > 0) elements(0) else null
     val remainder = if (elements.length > 1) {
       val pb = new PathBuilder
@@ -39,7 +39,7 @@ object Path {
     (first, remainder)
   }
 
-  private def create(i: ju.Iterator[Path]): (String, Path) =
+  private def create(i: ju.Iterator[Path]): (String | Null, Path | Null) =
     if (i.hasNext) {
       val firstPath = i.next
       val pb = new PathBuilder
@@ -54,14 +54,15 @@ object Path {
 }
 
 final class Path @throws(classOf[ConfigException]) (
-    val first: String,
-    val remainder: Path
+    val _first: String | Null,
+    val remainder: Path | Null
 ) {
-  if (first == null)
+  if (_first == null)
     throw new ConfigException.BugOrBroken("empty path")
+  val first: String = _first.nn
 
   // added as private constructor helper
-  private def this(tuple: (String, Path)) = this(tuple._1, tuple._2)
+  private def this(tuple: (String | Null, Path | Null)) = this(tuple._1, tuple._2)
 
   def this(elements: String*) = this(Path.create(elements: _*))
 
@@ -75,13 +76,13 @@ final class Path @throws(classOf[ConfigException]) (
    * @return
    *   path minus the last element or null if we have just one element
    */
-  private[impl] def parent: Path = {
+  private[impl] def parent: Path | Null = {
     if (remainder == null) return null
     val pb = new PathBuilder
-    var p = this
-    while (p.remainder != null) {
-      pb.appendKey(p.first)
-      p = p.remainder
+    var p: Path | Null = this
+    while (p.nn.remainder != null) {
+      pb.appendKey(p.nn.first)
+      p = p.nn.remainder
     }
     pb.result
   }
@@ -91,9 +92,9 @@ final class Path @throws(classOf[ConfigException]) (
    *   last element in the path
    */
   private[impl] def last: String = {
-    var p = this
-    while (p.remainder != null) p = p.remainder
-    p.first
+    var p: Path | Null = this
+    while (p.nn.remainder != null) p = p.nn.remainder
+    p.nn.first
   }
 
   private[impl] def prepend(toPrepend: Path) = {
@@ -113,9 +114,9 @@ final class Path @throws(classOf[ConfigException]) (
     count
   }
 
-  private[impl] def subPath(removeFromFront: Int): Path = {
+  private[impl] def subPath(removeFromFront: Int): Path | Null = {
     var count = removeFromFront
-    var p = this
+    var p: Path | Null = this
     while (p != null && count > 0) {
       count -= 1
       p = p.remainder
@@ -123,16 +124,16 @@ final class Path @throws(classOf[ConfigException]) (
     p
   }
 
-  private[impl] def subPath(firstIndex: Int, lastIndex: Int): Path = {
+  private[impl] def subPath(firstIndex: Int, lastIndex: Int): Path | Null = {
     if (lastIndex < firstIndex)
       throw new ConfigException.BugOrBroken("bad call to subPath")
-    var from = subPath(firstIndex)
+    var from: Path | Null = subPath(firstIndex)
     val pb = new PathBuilder
     var count = lastIndex - firstIndex
     while (count > 0) {
       count -= 1
-      pb.appendKey(from.first)
-      from = from.remainder
+      pb.appendKey(from.nn.first)
+      from = from.nn.remainder
       if (from == null)
         throw new ConfigException.BugOrBroken(
           "subPath lastIndex out of range " + lastIndex
@@ -142,13 +143,13 @@ final class Path @throws(classOf[ConfigException]) (
   }
 
   private[impl] def startsWith(other: Path): Boolean = {
-    var myRemainder = this
-    var otherRemainder = other
-    if (otherRemainder.length <= myRemainder.length) {
+    var myRemainder: Path | Null = this
+    var otherRemainder: Path | Null = other
+    if (otherRemainder.nn.length <= myRemainder.nn.length) {
       while (otherRemainder != null) {
-        if (!(otherRemainder.first == myRemainder.first)) return false
-        myRemainder = myRemainder.remainder
-        otherRemainder = otherRemainder.remainder
+        if (!(otherRemainder.nn.first == myRemainder.nn.first)) return false
+        myRemainder = myRemainder.nn.remainder
+        otherRemainder = otherRemainder.nn.remainder
       }
       return true
     }

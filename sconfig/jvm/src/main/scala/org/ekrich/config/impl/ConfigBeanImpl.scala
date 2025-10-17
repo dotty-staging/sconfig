@@ -72,7 +72,7 @@ object ConfigBeanImpl {
         originalNames.put(camelName, originalName)
       }
     }
-    var beanInfo: BeanInfo = null
+    var beanInfo: BeanInfo | Null = null
     try beanInfo = Introspector.getBeanInfo(clazz)
     catch {
       case e: IntrospectionException =>
@@ -84,7 +84,7 @@ object ConfigBeanImpl {
     try {
       val beanProps =
         new ju.ArrayList[PropertyDescriptor]
-      for (beanProp <- beanInfo.getPropertyDescriptors) {
+      for (beanProp <- beanInfo.nn.getPropertyDescriptors) {
         breakable {
           if (beanProp.getReadMethod == null || beanProp.getWriteMethod == null)
             break() // continue
@@ -355,7 +355,7 @@ object ConfigBeanImpl {
       beanProp.getReadMethod.getAnnotationsByType(classOf[Optional]).length > 0
   }
 
-  private def getField(beanClass: Class[_], fieldName: String): Field = {
+  private def getField(beanClass: Class[_], fieldName: String): Field | Null = {
     try {
       val field = beanClass.getDeclaredField(fieldName)
       field.setAccessible(true)

@@ -70,8 +70,8 @@ class ConfParserTest extends TestUtils {
   }
 
   private def parsePath(s: String): Path = {
-    var firstException: ConfigException = null
-    var secondException: ConfigException = null
+    var firstException: ConfigException | Null = null
+    var secondException: ConfigException | Null = null
 
     // parse first by wrapping into a whole document and using
     // the regular parser.

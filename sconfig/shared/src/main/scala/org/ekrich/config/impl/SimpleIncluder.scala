@@ -36,11 +36,11 @@ object SimpleIncluder {
   // the heuristic includer in static form
   private[impl] def includeWithoutFallback(
       context: ConfigIncludeContext,
-      name: String
+      name: String | Null
   ) = {
     // the heuristic is valid URL then URL, else relative to including file;
     // relativeTo in a file falls back to classpath inside relativeTo().
-    var url: URL = null
+    var url: URL | Null = null
     try url = new URL(name)
     catch {
       case e: MalformedURLException =>
@@ -50,7 +50,7 @@ object SimpleIncluder {
     else {
       val source =
         new RelativeNameSource(context)
-      fromBasename(source, name, context.parseOptions)
+      fromBasename(source, name.nn, context.parseOptions)
     }
   }
 
@@ -108,7 +108,7 @@ object SimpleIncluder {
       name: String,
       options: ConfigParseOptions
   ) = {
-    var obj: ConfigObject = null
+    var obj: ConfigObject | Null = null
     if (name.endsWith(".conf") || name.endsWith(".json") || name.endsWith(
           ".properties"
         )) {
@@ -199,7 +199,7 @@ object SimpleIncluder {
   // the Proxy is a proxy for an application-provided includer that uses our
   // default implementations when the application-provided includer doesn't
   // have an implementation.
-  private[impl] class Proxy private[impl] (val delegater: ConfigIncluder)
+  private[impl] class Proxy private[impl] (val delegater: ConfigIncluder | Null)
       extends FullIncluder {
     override def withFallback(fallback: ConfigIncluder): ConfigIncluder = { // we never fall back
       this
@@ -207,9 +207,9 @@ object SimpleIncluder {
 
     override def include(
         context: ConfigIncludeContext,
-        what: String
+        what: String | Null
     ): ConfigObject =
-      delegater.include(context, what)
+      delegater.asInstanceOf[ConfigIncluder].include(context, what)
 
     override def includeResources(
         context: ConfigIncludeContext,
@@ -242,23 +242,23 @@ object SimpleIncluder {
       else includeFileWithoutFallback(context, what)
   }
 
-  private[impl] def makeFull(includer: ConfigIncluder) =
+  private[impl] def makeFull(includer: ConfigIncluder | Null) =
     if (includer.isInstanceOf[FullIncluder])
       includer.asInstanceOf[FullIncluder]
     else new SimpleIncluder.Proxy(includer)
 }
 
-class SimpleIncluder private[impl] (var fallback: ConfigIncluder)
+class SimpleIncluder private[impl] (var fallback: ConfigIncluder | Null)
     extends FullIncluder {
   // this is the heuristic includer
   override def include(
       context: ConfigIncludeContext,
-      name: String
+      name: String | Null
   ): ConfigObject = {
     val obj = SimpleIncluder.includeWithoutFallback(context, name)
     // now use the fallback includer if any and merge
     // its result.
-    if (fallback != null) obj.withFallback(fallback.include(context, name))
+    if (fallback != null) obj.withFallback(fallback.nn.include(context, name))
     else obj
   }
 
@@ -308,6 +308,6 @@ class SimpleIncluder private[impl] (var fallback: ConfigIncluder)
       throw new ConfigException.BugOrBroken("trying to create includer cycle")
     else if (this.fallback eq fallback) this
     else if (this.fallback != null)
-      new SimpleIncluder(this.fallback.withFallback(fallback))
+      new SimpleIncluder(this.fallback.nn.withFallback(fallback))
     else new SimpleIncluder(fallback)
 }

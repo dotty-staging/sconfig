@@ -4,11 +4,11 @@ import org.ekrich.config.ConfigException
 
 // value is allowed to be null
 object ResolveResult {
-  def make[V <: AbstractConfigValue](context: ResolveContext, value: V) =
+  def make[V <: (AbstractConfigValue | Null)](context: ResolveContext, value: V) =
     new ResolveResult[V](context, value)
 }
 
-final class ResolveResult[V <: AbstractConfigValue](
+final class ResolveResult[V <: (AbstractConfigValue | Null)](
     val context: ResolveContext,
     val value: V
 ) {

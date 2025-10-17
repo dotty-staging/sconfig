@@ -7,7 +7,7 @@ import org.ekrich.config.ConfigIncludeContext
 import org.ekrich.config.ConfigParseOptions
 import org.ekrich.config.ConfigParseable
 
-class SimpleIncludeContext(parseable: Parseable, options: ConfigParseOptions)
+class SimpleIncludeContext(parseable: Parseable | Null, options: ConfigParseOptions)
     extends ConfigIncludeContext {
   def this(parseable: Parseable) =
     this(parseable, SimpleIncluder.clearForInclude(parseable.options()))
@@ -16,7 +16,7 @@ class SimpleIncludeContext(parseable: Parseable, options: ConfigParseOptions)
     if (parseable eq this.parseable) this
     else new SimpleIncludeContext(parseable)
 
-  override def relativeTo(filename: String): ConfigParseable = {
+  override def relativeTo(filename: String): ConfigParseable | Null = {
     if (ConfigImpl.traceLoadsEnabled)
       ConfigImpl.trace(
         "Looking for '" + filename + "' relative to " + parseable

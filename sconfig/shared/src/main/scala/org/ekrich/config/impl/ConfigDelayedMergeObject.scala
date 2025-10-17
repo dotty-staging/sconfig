@@ -69,13 +69,13 @@ final class ConfigDelayedMergeObject(
   override def makeReplacement(
       context: ResolveContext,
       skipping: Int
-  ): AbstractConfigValue =
+  ): AbstractConfigValue | Null =
     ConfigDelayedMerge.makeReplacement(context, stack, skipping)
   override def resolveStatus: ResolveStatus = ResolveStatus.UNRESOLVED
   override def replaceChild(
       child: AbstractConfigValue,
-      replacement: AbstractConfigValue
-  ): AbstractConfigValue = {
+      replacement: AbstractConfigValue | Null
+  ): AbstractConfigValue | Null = {
     val newStack =
       AbstractConfigValue.replaceChildInList(stack, child, replacement)
     if (newStack == null) null
@@ -145,7 +145,7 @@ final class ConfigDelayedMergeObject(
       sb: jl.StringBuilder,
       indent: Int,
       atRoot: Boolean,
-      atKey: String,
+      atKey: String | Null,
       options: ConfigRenderOptions
   ): Unit = {
     ConfigDelayedMerge.render(stack, sb, indent, atRoot, atKey, options)
@@ -175,7 +175,7 @@ final class ConfigDelayedMergeObject(
   // and ConfigTest.test01Serializable
   override def attemptPeekWithPartialResolve(
       key: String
-  ): AbstractConfigValue = {
+  ): AbstractConfigValue | Null= {
     // a partial resolve of a ConfigDelayedMergeObject always results in a
     // SimpleConfigObject because all the substitutions in the stack get
     // resolved in order to look up the partial.
@@ -190,7 +190,7 @@ final class ConfigDelayedMergeObject(
     @tailrec
     def loop(
         layers: List[AbstractConfigValue]
-    ): Either[ConfigException, AbstractConfigValue] =
+    ): Either[ConfigException, AbstractConfigValue | Null] =
       layers match {
         case Nil =>
           // If we get here, then we never found anything unresolved which means

@@ -32,7 +32,7 @@ trait ConfigIncludeContext {
    * @return
    *   parseable item relative to the resource doing the including, or null
    */
-  def relativeTo(filename: String): ConfigParseable
+  def relativeTo(filename: String): ConfigParseable | Null
 
   /**
    * Parse options to use (if you use another method to get a {@link

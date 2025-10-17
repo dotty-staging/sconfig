@@ -31,7 +31,7 @@ class ConfigDocumentParserTest extends TestUtils {
 
   private def parseSimpleValueTest(
       origText: String,
-      finalText: String = null
+      finalText: String | Null = null
   ): Unit = {
     val expectedRenderedText = if (finalText == null) origText else finalText
     val node = ConfigDocumentParser.parseValue(

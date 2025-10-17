@@ -11,7 +11,7 @@ import scala.collection.mutable
 final class PathBuilder private[impl] () {
   final private val keys = new mutable.ArrayStack[String]
   // the keys are kept "backward" (top of stack is end of path)
-  private var resultPath: Path = null
+  private var resultPath: Path | Null = null
 
   private def checkCanAppend(): Unit = {
     if (resultPath != null)
@@ -33,17 +33,17 @@ final class PathBuilder private[impl] () {
       while (true) {
         keys.push(first)
         if (remainder != null) {
-          first = remainder.first
-          remainder = remainder.remainder
+          first = remainder.nn.first
+          remainder = remainder.nn.remainder
         } else break() // break
       }
     }
   }
 
-  private[impl] def result: Path = {
+  private[impl] def result: Path | Null = {
     // note: if keys is empty, we want to return null, which is a valid empty path
     if (resultPath == null) {
-      var remainder: Path = null
+      var remainder: Path | Null = null
       while (!keys.isEmpty) {
         val key = keys.pop()
         remainder = new Path(key, remainder)

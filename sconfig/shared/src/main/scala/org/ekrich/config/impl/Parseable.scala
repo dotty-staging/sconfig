@@ -36,7 +36,7 @@ object Parseable {
    * Internal implementation detail, not ABI stable, do not touch.
    */
   protected trait Relativizer {
-    def relativeTo(filename: String): ConfigParseable
+    def relativeTo(filename: String): ConfigParseable | Null
   }
   private val parseStack =
     new ThreadLocal[ju.LinkedList[Parseable]]() {
@@ -77,7 +77,7 @@ object Parseable {
       // NOTHING.
     }
   }
-  private[impl] def relativeTo(url: URL, filename: String): URL = {
+  private[impl] def relativeTo(url: URL, filename: String): URL | Null = {
     // I'm guessing this completely fails on Windows, help wanted
     if (new File(filename).isAbsolute()) return null
     try {
@@ -98,7 +98,7 @@ object Parseable {
         null
     }
   }
-  private[impl] def relativeTo(file: File, filename: String): File = {
+  private[impl] def relativeTo(file: File, filename: String): File | Null = {
     val child = new File(filename)
     if (child.isAbsolute()) return null
     val parent = file.getParentFile()
@@ -163,7 +163,7 @@ object Parseable {
   private val propertiesContentType = "text/x-java-properties"
   private val hoconContentType = "application/hocon"
   private object ParseableURL {
-    private def acceptContentType(options: ConfigParseOptions): String = {
+    private def acceptContentType(options: ConfigParseOptions): String | Null = {
       if (options.getSyntax == null) null
       else
         options.getSyntax match {
@@ -177,7 +177,7 @@ object Parseable {
   private[impl] class ParseableURL protected (val input: URL)
       extends Parseable {
     // does not postConstruct (subclass does it)
-    private var contentTypeStr: String = null
+    private var contentTypeStr: String | Null = null
     // shadowing with a different type(ConfigSyntax) doesn't work in Scala
     def this(input: URL, options: ConfigParseOptions) = {
       this(input)
@@ -204,9 +204,9 @@ object Parseable {
         if (contentTypeStr != null) {
           if (ConfigImpl.traceLoadsEnabled)
             trace("URL sets Content-Type: '" + contentTypeStr + "'")
-          contentTypeStr = contentTypeStr.trim
-          val semi = contentTypeStr.indexOf(';')
-          if (semi >= 0) contentTypeStr = contentTypeStr.substring(0, semi)
+          contentTypeStr = contentTypeStr.nn.trim
+          val semi = contentTypeStr.nn.indexOf(';')
+          if (semi >= 0) contentTypeStr = contentTypeStr.nn.substring(0, semi)
         }
         val stream = connection.getInputStream()
         readerFromStream(stream)
@@ -228,10 +228,10 @@ object Parseable {
           )
       }
 
-    override private[impl] def guessSyntax: ConfigSyntax =
+    override private[impl] def guessSyntax: ConfigSyntax | Null =
       ConfigImplUtil.syntaxFromExtension(input.getPath())
 
-    override private[impl] def contentType: ConfigSyntax =
+    override private[impl] def contentType: ConfigSyntax | Null =
       if (contentTypeStr != null) {
         if (contentTypeStr == jsonContentType) {
           ConfigSyntax.JSON
@@ -249,7 +249,7 @@ object Parseable {
         null
       }
 
-    override private[impl] def relativeTo(filename: String): ConfigParseable = {
+    override private[impl] def relativeTo(filename: String): ConfigParseable | Null = {
       val url = Parseable.relativeTo(input, filename)
       if (url == null) return null
       newURL(url, options().setOriginDescription(null))
@@ -284,8 +284,8 @@ object Parseable {
     }
     override private[impl] def guessSyntax =
       ConfigImplUtil.syntaxFromExtension(input.getName())
-    override private[impl] def relativeTo(filename: String): ConfigParseable = {
-      val sibling: File =
+    override private[impl] def relativeTo(filename: String): ConfigParseable | Null = {
+      val sibling: File | Null =
         if (new File(filename).isAbsolute()) new File(filename)
         else { // this may return null
           Parseable.relativeTo(input, filename)
@@ -380,7 +380,7 @@ object Parseable {
     }
     override private[impl] def guessSyntax =
       ConfigImplUtil.syntaxFromExtension(resource)
-    override def relativeTo(sibling: String): ConfigParseable =
+    override def relativeTo(sibling: String): ConfigParseable | Null =
       if (sibling.startsWith("/")) { // if it starts with "/" then don't make it relative to
         // the including resource
         newResources(sibling.substring(1), options.setOriginDescription(null))
@@ -468,10 +468,10 @@ object Parseable {
 }
 
 abstract class Parseable protected (
-    private var initialOptions: ConfigParseOptions
+    private var initialOptions: ConfigParseOptions | Null
 ) extends ConfigParseable {
-  private var includeContext: ConfigIncludeContext = null
-  private var initialOrigin: ConfigOrigin = null
+  private var includeContext: ConfigIncludeContext = _
+  private var initialOrigin: ConfigOrigin = _
   def this() = this(null)
   private def fixupOptions(baseOptions: ConfigParseOptions) = {
     var syntax = baseOptions.getSyntax
@@ -483,14 +483,14 @@ abstract class Parseable protected (
     // make sure the app-provided includer is complete
     modified =
       modified.setIncluder(SimpleIncluder.makeFull(modified.getIncluder))
-    modified
+    modified.nn
   }
   protected def postConstruct(baseOptions: ConfigParseOptions): Unit = {
     this.initialOptions = fixupOptions(baseOptions)
     this.includeContext = new SimpleIncludeContext(this)
-    if (initialOptions.getOriginDescription != null)
+    if (initialOptions.nn.getOriginDescription != null)
       initialOrigin =
-        SimpleConfigOrigin.newSimple(initialOptions.getOriginDescription)
+        SimpleConfigOrigin.newSimple(initialOptions.nn.getOriginDescription.nn)
     else initialOrigin = createOrigin()
   }
   // the general idea is that any work should be in here, not in the
@@ -504,9 +504,9 @@ abstract class Parseable protected (
   protected def reader(): Reader
   @throws[IOException]
   protected def reader(options: ConfigParseOptions): Reader = reader()
-  private[impl] def guessSyntax: ConfigSyntax = null
-  private[impl] def contentType: ConfigSyntax = null
-  private[impl] def relativeTo(filename: String): ConfigParseable = {
+  private[impl] def guessSyntax: ConfigSyntax | Null = null
+  private[impl] def contentType: ConfigSyntax | Null = null
+  private[impl] def relativeTo(filename: String): ConfigParseable | Null = {
     // fall back to classpath; we treat the "filename" as absolute
     // (don't add a package name in front),
     // if it starts with "/" then remove the "/", for consistency
@@ -539,7 +539,7 @@ abstract class Parseable protected (
     // passed-in options can override origin
     val origin =
       if (options.getOriginDescription != null)
-        SimpleConfigOrigin.newSimple(options.getOriginDescription)
+        SimpleConfigOrigin.newSimple(options.getOriginDescription.nn)
       else initialOrigin
     parseValue(origin, options)
   }
@@ -573,7 +573,7 @@ abstract class Parseable protected (
     val options = fixupOptions(baseOptions)
     var origin =
       if (options.getOriginDescription != null)
-        SimpleConfigOrigin.newSimple(options.getOriginDescription)
+        SimpleConfigOrigin.newSimple(options.getOriginDescription.nn)
       else initialOrigin
     parseDocument(origin, options)
   }
@@ -615,7 +615,7 @@ abstract class Parseable protected (
   ): AbstractConfigValue = {
     val readerVal: Reader = reader(finalOptions)
     // after reader() we will have loaded the Content-Type.
-    val contentTypeVal: ConfigSyntax = contentType
+    val contentTypeVal: ConfigSyntax | Null = contentType
     val optionsWithContentType =
       if (contentType != null) {
         if (ConfigImpl.traceLoadsEnabled && finalOptions.getSyntax != null)
@@ -649,7 +649,7 @@ abstract class Parseable protected (
       finalOptions: ConfigParseOptions
   ): ConfigDocument = {
     val readerVal: Reader = reader(finalOptions)
-    val contentTypeVal: ConfigSyntax = contentType
+    val contentTypeVal: ConfigSyntax | Null = contentType
     val optionsWithContentType =
       if (contentType != null) {
         if (ConfigImpl.traceLoadsEnabled && finalOptions.getSyntax != null)
@@ -681,6 +681,6 @@ abstract class Parseable protected (
   private[impl] def parseValue(): AbstractConfigValue = parseValue(options())
   override final def origin(): ConfigOrigin = initialOrigin
   protected def createOrigin(): ConfigOrigin
-  override def options(): ConfigParseOptions = initialOptions
+  override def options(): ConfigParseOptions = initialOptions.nn
   override def toString(): String = getClass.getSimpleName
 }

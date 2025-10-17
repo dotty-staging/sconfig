@@ -45,8 +45,8 @@ object ConfigParser {
           if (remaining == null) {
             break() // break
           } else {
-            key = remaining.first
-            remaining = remaining.remainder
+            key = remaining.nn.first
+            remaining = remaining.nn.remainder
           }
         }
       }
@@ -72,7 +72,7 @@ object ConfigParser {
   }
 
   final private[impl] class ParseContext private[impl] (
-      val flavor: ConfigSyntax,
+      val flavor: ConfigSyntax | Null,
       val baseOrigin: ConfigOrigin,
       val document: ConfigNodeRoot,
       val includer: FullIncluder,
@@ -89,7 +89,7 @@ object ConfigParser {
     // value.
     private def parseConcatenation(
         n: ConfigNodeConcatenation
-    ): AbstractConfigValue = {
+    ): AbstractConfigValue | Null = {
       // this trick is not done in JSON
       if (flavor eq ConfigSyntax.JSON)
         throw new ConfigException.BugOrBroken(
@@ -97,7 +97,7 @@ object ConfigParser {
         )
       val values = new ju.ArrayList[AbstractConfigValue]
       for (node <- n.children.asScala) {
-        var v: AbstractConfigValue = null
+        var v: AbstractConfigValue | Null = null
         if (node.isInstanceOf[AbstractConfigNodeValue]) {
           v = parseValue(node.asInstanceOf[AbstractConfigNodeValue], null)
           values.add(v)
@@ -113,7 +113,7 @@ object ConfigParser {
       parseError(message, null)
     private def parseError(
         message: String,
-        cause: Throwable
+        cause: Throwable | Null
     ): ConfigException.Parse =
       new ConfigException.Parse(lineOrigin, message, cause)
     private def fullCurrentPath = {
@@ -127,9 +127,9 @@ object ConfigParser {
 
     private def parseValue(
         n: AbstractConfigNodeValue,
-        comments: ju.List[String]
+        comments: ju.List[String] | Null
     ): AbstractConfigValue = {
-      var v: AbstractConfigValue = null
+      var v: AbstractConfigValue | Null = null
       val startingArrayCount = arrayCount
       if (n.isInstanceOf[ConfigNodeSimpleValue])
         v = n.asInstanceOf[ConfigNodeSimpleValue].value
@@ -144,8 +144,8 @@ object ConfigParser {
           "Expecting a value but got wrong node type: " + n.getClass
         )
       if (comments != null && !comments.isEmpty) {
-        v = v.withOrigin(
-          v.origin.prependComments(new ju.ArrayList[String](comments))
+        v = v.nn.withOrigin(
+          v.nn.origin.prependComments(new ju.ArrayList[String](comments))
         )
         comments.clear()
       }
@@ -153,7 +153,7 @@ object ConfigParser {
         throw new ConfigException.BugOrBroken(
           "Bug in config parser: unbalanced array count"
         )
-      v
+      v.nn
     }
     private def parseInclude(
         values: ju.Map[String, AbstractConfigValue],
@@ -163,10 +163,10 @@ object ConfigParser {
       val cic = includeContext.setParseOptions(
         includeContext.parseOptions.setAllowMissing(!isRequired)
       )
-      var obj: AbstractConfigObject = null
+      var obj: AbstractConfigObject | Null = null
       n.kind.name match {
         case "URL" =>
-          var url: URL = null
+          var url: URL | Null = null
           try url = new URL(n.name)
           catch {
             case e: MalformedURLException =>
@@ -175,14 +175,14 @@ object ConfigParser {
                 e
               )
           }
-          obj = includer.includeURL(cic, url).asInstanceOf[AbstractConfigObject]
+          obj = includer.includeURL(cic, url.nn).asInstanceOf[AbstractConfigObject]
         case "FILE" =>
           obj = includer
             .includeFile(cic, new File(n.name))
             .asInstanceOf[AbstractConfigObject]
         case "CLASSPATH" =>
           obj = includer
-            .includeResources(cic, n.name)
+            .includeResources(cic, n.name.nn)
             .asInstanceOf[AbstractConfigObject]
         case "HEURISTIC" =>
           obj = includer.include(cic, n.name).asInstanceOf[AbstractConfigObject]
@@ -200,8 +200,8 @@ object ConfigParser {
         val prefix = fullCurrentPath
         obj = obj.relativized(prefix)
       }
-      for (key <- obj.keySet.asScala) {
-        val v = obj.get(key)
+      for (key <- obj.nn.keySet.asScala) {
+        val v = obj.nn.get(key)
         val existing = values.get(key)
         if (existing != null) values.put(key, v.withFallback(existing))
         else values.put(key, v)
@@ -254,8 +254,8 @@ object ConfigParser {
             // below in order to throw the above exception.
             arrayCount += 1
           }
-          var valueNode: AbstractConfigNodeValue = null
-          var newValue: AbstractConfigValue = null
+          var valueNode: AbstractConfigNodeValue | Null = null
+          var newValue: AbstractConfigValue | Null = null
           valueNode = node.asInstanceOf[ConfigNodeField].value
           // comments from the key token go to the value token
           newValue = parseValue(valueNode, comments)
@@ -266,14 +266,14 @@ object ConfigParser {
             val concat =
               new ju.ArrayList[AbstractConfigValue](2)
             val previousRef = new ConfigReference(
-              newValue.origin,
+              newValue.nn.origin,
               new SubstitutionExpression(
                 fullCurrentPath,
                 true /* optional */
               )
             )
             val list = new SimpleConfigList(
-              newValue.origin,
+              newValue.nn.origin,
               ju.Collections.singletonList(newValue)
             )
             concat.add(previousRef)
@@ -288,8 +288,8 @@ object ConfigParser {
                 if (nodes.get(i).isInstanceOf[ConfigNodeComment]) {
                   val comment =
                     nodes.get(i).asInstanceOf[ConfigNodeComment]
-                  newValue = newValue.withOrigin(
-                    newValue.origin
+                  newValue = newValue.nn.withOrigin(
+                    newValue.nn.origin
                       .appendComments(
                         ju.Collections.singletonList(comment.commentText)
                       )
@@ -326,7 +326,7 @@ object ConfigParser {
                 throw parseError(
                   "JSON does not allow duplicate fields: '" + key + "' was already seen at " + existing.origin.description
                 )
-              else newValue = newValue.withFallback(existing)
+              else newValue = newValue.nn.withFallback(existing)
             }
             values.put(key, newValue)
           } else {
@@ -335,7 +335,7 @@ object ConfigParser {
                 "somehow got multi-element path in JSON mode"
               )
             var obj =
-              ParseContext.createValueUnderPath(remaining, newValue)
+              ParseContext.createValueUnderPath(remaining, newValue.nn)
             val existing = values.get(key)
             if (existing != null) obj = obj.withFallback(existing)
             values.put(key, obj)
@@ -352,7 +352,7 @@ object ConfigParser {
       val values = new ju.ArrayList[AbstractConfigValue]
       var lastWasNewLine = false
       val comments = new ju.ArrayList[String]
-      var v: AbstractConfigValue = null
+      var v: AbstractConfigValue | Null = null
       for (node <- n.children.asScala) {
         if (node.isInstanceOf[ConfigNodeComment]) {
           comments.add(node.asInstanceOf[ConfigNodeComment].commentText)
@@ -363,8 +363,8 @@ object ConfigParser {
           if (lastWasNewLine && v == null) comments.clear()
           else if (v != null) {
             values.add(
-              v.withOrigin(
-                v.origin.appendComments(new ju.ArrayList[String](comments))
+              v.nn.withOrigin(
+                v.nn.origin.appendComments(new ju.ArrayList[String](comments))
               )
             )
             comments.clear()
@@ -375,8 +375,8 @@ object ConfigParser {
           lastWasNewLine = false
           if (v != null) {
             values.add(
-              v.withOrigin(
-                v.origin.appendComments(new ju.ArrayList[String](comments))
+              v.nn.withOrigin(
+                v.nn.origin.appendComments(new ju.ArrayList[String](comments))
               )
             )
             comments.clear()
@@ -387,15 +387,15 @@ object ConfigParser {
       // There shouldn't be any comments at this point, but add them just in case
       if (v != null)
         values.add(
-          v.withOrigin(
-            v.origin.appendComments(new ju.ArrayList[String](comments))
+          v.nn.withOrigin(
+            v.nn.origin.appendComments(new ju.ArrayList[String](comments))
           )
         )
       arrayCount -= 1
       new SimpleConfigList(arrayOrigin, values)
     }
     private[impl] def parse: AbstractConfigValue = {
-      var result: AbstractConfigValue = null
+      var result: AbstractConfigValue | Null = null
       val comments = new ju.ArrayList[String]
       var lastWasNewLine = false
       breakable {
@@ -409,8 +409,8 @@ object ConfigParser {
               lineNumber += 1
               if (lastWasNewLine && result == null) comments.clear()
               else if (result != null) {
-                result = result.withOrigin(
-                  result.origin
+                result = result.nn.withOrigin(
+                  result.nn.origin
                     .appendComments(new ju.ArrayList[String](comments))
                 )
                 comments.clear()
@@ -425,7 +425,7 @@ object ConfigParser {
           }
         }
       }
-      result
+      result.nn
     }
   }
 }

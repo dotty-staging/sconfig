@@ -27,7 +27,7 @@ object ConfigDelayedMerge {
       stack: ju.List[AbstractConfigValue],
       context: ResolveContext,
       source: ResolveSource
-  ): ResolveResult[_ <: AbstractConfigValue] = {
+  ): ResolveResult[_ <: AbstractConfigValue | Null] = {
     if (ConfigImpl.traceSubstitutionsEnabled) {
       ConfigImpl.trace(
         context.depth,
@@ -46,9 +46,9 @@ object ConfigDelayedMerge {
     // we may remain a delayed merge though.
     var newContext = context
     var count = 0
-    var merged: AbstractConfigValue = null
+    var merged: AbstractConfigValue | Null = null
     for (end <- stack.asScala) { // the end value may or may not be resolved already
-      var sourceForEnd: ResolveSource = null
+      var sourceForEnd: ResolveSource | Null = null
       if (end.isInstanceOf[ReplaceableMergeStack])
         throw new ConfigException.BugOrBroken(
           "A delayed merge should not contain another one: " + replaceable
@@ -106,20 +106,20 @@ object ConfigDelayedMerge {
               newContext.depth + 1,
               "merging " + merged + " with fallback " + resolvedEnd
             )
-          merged = merged.withFallback(resolvedEnd)
+          merged = merged.nn.withFallback(resolvedEnd.asInstanceOf[AbstractConfigValue])
         }
       count += 1
       if (ConfigImpl.traceSubstitutionsEnabled)
         ConfigImpl.trace(newContext.depth, "stack merged, yielding: " + merged)
     }
-    ResolveResult.make(newContext, merged)
+    ResolveResult.make[AbstractConfigValue | Null](newContext, merged)
   }
   // static method also used by ConfigDelayedMergeObject; end may be null
   def makeReplacement(
       context: ResolveContext,
       stack: ju.List[AbstractConfigValue],
       skipping: Int
-  ): AbstractConfigValue = {
+  ): AbstractConfigValue | Null = {
     val subStack =
       stack.subList(skipping, stack.size)
     if (subStack.isEmpty) {
@@ -130,9 +130,9 @@ object ConfigDelayedMerge {
         )
       null
     } else { // generate a new merge stack from only the remaining items
-      var merged: AbstractConfigValue = null
+      var merged: AbstractConfigValue | Null = null
       for (v <- subStack.asScala) {
-        if (merged == null) merged = v else merged = merged.withFallback(v)
+        if (merged == null) merged = v else merged = merged.nn.withFallback(v)
       }
       merged
     }
@@ -148,7 +148,7 @@ object ConfigDelayedMerge {
       sb: jl.StringBuilder,
       indentVal: Int,
       atRoot: Boolean,
-      atKey: String,
+      atKey: String | Null,
       options: ConfigRenderOptions
   ): Unit = {
     val commentMerge = options.getComments
@@ -241,21 +241,21 @@ final class ConfigDelayedMerge(
   override def resolveSubstitutions(
       context: ResolveContext,
       source: ResolveSource
-  ): ResolveResult[_ <: AbstractConfigValue] =
+  ): ResolveResult[_ <: AbstractConfigValue | Null] =
     ConfigDelayedMerge.resolveSubstitutions(this, stack, context, source)
 
   override def makeReplacement(
       context: ResolveContext,
       skipping: Int
-  ): AbstractConfigValue =
+  ): AbstractConfigValue | Null =
     ConfigDelayedMerge.makeReplacement(context, stack, skipping)
 
   override def resolveStatus: ResolveStatus = ResolveStatus.UNRESOLVED
 
   override def replaceChild(
       child: AbstractConfigValue,
-      replacement: AbstractConfigValue
-  ): AbstractConfigValue = {
+      replacement: AbstractConfigValue | Null
+  ): AbstractConfigValue | Null = {
     val newStack =
       AbstractConfigValue.replaceChildInList(stack, child, replacement)
     if (newStack == null) null else new ConfigDelayedMerge(origin, newStack)
@@ -313,7 +313,7 @@ final class ConfigDelayedMerge(
       sb: jl.StringBuilder,
       indent: Int,
       atRoot: Boolean,
-      atKey: String,
+      atKey: String | Null,
       options: ConfigRenderOptions
   ): Unit = {
     ConfigDelayedMerge.render(stack, sb, indent, atRoot, atKey, options)

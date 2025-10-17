@@ -158,6 +158,9 @@ lazy val sconfig = crossProject(JVMPlatform, NativePlatform, JSPlatform)
       "testList.1" -> "1",
       "testClassesPath" -> (Test / classDirectory).value.getPath
     ),
+    Test / scalacOptions --= Seq(
+      "-Yexplicit-nulls"
+    ),
     // uncomment for debugging
     // Test / javaOptions += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
     // mima settings

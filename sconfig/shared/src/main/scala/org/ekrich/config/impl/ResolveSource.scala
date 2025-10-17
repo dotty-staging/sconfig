@@ -31,7 +31,7 @@ object ResolveSource {
         path
       )
       new ResultWithPath(
-        ResolveResult.make(newContext, pair.value),
+        ResolveResult.make[AbstractConfigValue | Null](newContext, pair.value),
         pair.pathFromRoot
       )
     } else
@@ -53,7 +53,7 @@ object ResolveSource {
   private def findInObject(
       obj: AbstractConfigObject,
       path: Path,
-      parents: Node[Container]
+      parents: Node[Container] | Null
   ): ValueWithPath = {
     val key = path.first
     val next = path.remainder
@@ -71,8 +71,8 @@ object ResolveSource {
   private def replace(
       list: ResolveSource.Node[Container],
       old: Container,
-      replacement: AbstractConfigValue
-  ): Node[Container] = {
+      replacement: AbstractConfigValue | Null
+  ): Node[Container] | Null = {
     val child: Container = list.head
     if (child ne old) {
       throw new ConfigException.BugOrBroken(
@@ -80,7 +80,7 @@ object ResolveSource {
           " on top and tried to replace " + old + " overall list was " + list
       )
     }
-    val parent = if (list.tail == null) null else list.tail.head
+    val parent = if (list.tail == null) null else list.tail.nn.head
     if (replacement == null || !replacement.isInstanceOf[Container]) {
       if (parent == null) {
         null
@@ -88,8 +88,8 @@ object ResolveSource {
         // we are deleting the child from the stack of containers
         // because it's either going away or not a container
         val newParent =
-          parent.replaceChild(old.asInstanceOf[AbstractConfigValue], null)
-        replace(list.tail, parent, newParent)
+          parent.replaceChild(old.asInstanceOf[AbstractConfigValue], null.asInstanceOf[AbstractConfigValue])
+        replace(list.tail.nn, parent, newParent)
       }
     } else {
       /* we replaced the container with another container */
@@ -101,7 +101,7 @@ object ResolveSource {
           replacement
         )
         val newTail =
-          replace(list.tail, parent, newParent)
+          replace(list.tail.nn, parent, newParent)
         if (newTail != null) {
           newTail.prepend(replacement.asInstanceOf[Container])
         } else {
@@ -113,37 +113,37 @@ object ResolveSource {
   // a persistent list
   final private[impl] class Node[T] private[impl] (
       val value: T,
-      val next: ResolveSource.Node[T]
+      val next: ResolveSource.Node[T] | Null
   ) {
     def this(value: T) = this(value, null)
     private[impl] def prepend(value: T) =
       new ResolveSource.Node[T](value, this)
     private[impl] def head: T = value
-    private[impl] def tail: Node[T] = next
+    private[impl] def tail: Node[T] | Null = next
     private[impl] def last = {
-      var i = this
-      while ({ i.next != null }) i = i.next
-      i.value
+      var i: Node[T] | Null = this
+      while ({ i.nn.next != null }) i = i.nn.next
+      i.nn.value
     }
     private[impl] def reverse: Node[T] =
       if (next == null) this
       else {
         var reversed = new ResolveSource.Node[T](value)
-        var i = next
+        var i: Node[T] | Null = next
         while ({ i != null }) {
           reversed = reversed.prepend(i.value)
-          i = i.next
+          i = i.nn.next
         }
         reversed
       }
     override def toString: String = {
       val sb = new StringBuffer
       sb.append("[")
-      var toAppendValue = this.reverse
+      var toAppendValue: Node[T] | Null = this.reverse
       while ({ toAppendValue != null }) {
-        sb.append(toAppendValue.value.toString)
-        if (toAppendValue.next != null) sb.append(" <= ")
-        toAppendValue = toAppendValue.next
+        sb.append(toAppendValue.nn.value.toString)
+        if (toAppendValue.nn.next != null) sb.append(" <= ")
+        toAppendValue = toAppendValue.nn.next
       }
       sb.append("]")
       sb.toString
@@ -151,14 +151,14 @@ object ResolveSource {
   }
   // value is allowed to be null
   final private[impl] class ValueWithPath private[impl] (
-      val value: AbstractConfigValue,
+      val value: AbstractConfigValue | Null,
       val pathFromRoot: ResolveSource.Node[Container]
   ) {
     override def toString: String =
       "ValueWithPath(value=" + value + ", pathFromRoot=" + pathFromRoot + ")"
   }
   final private[impl] class ResultWithPath private[impl] (
-      val result: ResolveResult[_ <: AbstractConfigValue],
+      val result: ResolveResult[_ <: AbstractConfigValue | Null],
       val pathFromRoot: ResolveSource.Node[Container]
   ) {
     override def toString: String =
@@ -171,13 +171,13 @@ final class ResolveSource(
     // This is used for knowing the chain of parents we used to get here.
     // null if we should assume we are not a descendant of the root.
     // the root itself should be a node in this if non-null.
-    val pathFromRoot: ResolveSource.Node[Container]
+    val pathFromRoot: ResolveSource.Node[Container] | Null
 ) {
   def this(root: AbstractConfigObject) = this(root, null)
 
   // if we replace the root with a non-object, use an empty
   // object with nothing in it instead.
-  private def rootMustBeObj(value: Container) =
+  private def rootMustBeObj(value: Container | Null) =
     if (value.isInstanceOf[AbstractConfigObject])
       value.asInstanceOf[AbstractConfigObject]
     else SimpleConfigObject.empty()
@@ -202,7 +202,7 @@ final class ResolveSource(
       // Then we want to check relative to the root file. We don't
       // want the prefix we were included at to be used when looking
       // up env variables either.
-      val unprefixed = subst.path.subPath(prefixLength)
+      val unprefixed = subst.path.subPath(prefixLength).nn
       if (prefixLength > 0) {
         if (ConfigImpl.traceSubstitutionsEnabled)
           ConfigImpl.trace(
@@ -271,7 +271,7 @@ final class ResolveSource(
     if (pathFromRoot == null) this else new ResolveSource(root)
   private[impl] def replaceCurrentParent(
       old: Container,
-      replacement: Container
+      replacement: Container | Null
   ) = {
     if (ConfigImpl.traceSubstitutionsEnabled)
       ConfigImpl.trace(
@@ -310,7 +310,7 @@ final class ResolveSource(
   // replacement may be null to delete
   private[impl] def replaceWithinCurrentParent(
       old: AbstractConfigValue,
-      replacement: AbstractConfigValue
+      replacement: AbstractConfigValue | Null
   ) = {
     if (ConfigImpl.traceSubstitutionsEnabled)
       ConfigImpl.trace(

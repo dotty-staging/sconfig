@@ -26,12 +26,12 @@ object SimpleConfigObject {
 
     @throws[NotPossibleToResolve]
     override def modifyChildMayThrow(
-        key: String,
+        key: String | Null,
         v: AbstractConfigValue
-    ): AbstractConfigValue =
+    ): AbstractConfigValue | Null =
       if (context.isRestrictedToChild) {
-        if (key == context.restrictToChild.first) {
-          val remainder = context.restrictToChild.remainder
+        if (key == context.restrictToChild.nn.first) {
+          val remainder = context.restrictToChild.nn.remainder
           if (remainder != null) {
             val result = context.restrict(remainder).resolve(v, source)
             context = result.context.unrestricted.restrict(originalRestrict)
@@ -123,7 +123,7 @@ object SimpleConfigObject {
 
   private[impl] def empty(): SimpleConfigObject = emptyInstance
 
-  private[impl] def empty(origin: ConfigOrigin): SimpleConfigObject =
+  private[impl] def empty(origin: ConfigOrigin | Null): SimpleConfigObject =
     if (origin == null) empty()
     else
       new SimpleConfigObject(
@@ -175,10 +175,10 @@ final class SimpleConfigObject(
   // that if we have { a : { b : 42 } } and do
   // withOnlyPath("a.b.c") that we don't keep an empty
   // "a" object.
-  override def withOnlyPathOrNull(path: Path): SimpleConfigObject = {
+  override def withOnlyPathOrNull(path: Path): SimpleConfigObject | Null = {
     val key = path.first
     val next = path.remainder
-    var v: AbstractConfigValue = value.get(key)
+    var v: AbstractConfigValue | Null = value.get(key)
     if (next != null) {
       if (v != null && v.isInstanceOf[AbstractConfigObject]) {
         v = v.asInstanceOf[AbstractConfigObject].withOnlyPathOrNull(next)
@@ -245,7 +245,7 @@ final class SimpleConfigObject(
       throw new ConfigException.BugOrBroken(
         "Trying to store null ConfigValue in a ConfigObject"
       )
-    var newMap: ju.Map[String, AbstractConfigValue] = null
+    var newMap: ju.Map[String, AbstractConfigValue] | Null = null
     if (value.isEmpty)
       newMap =
         ju.Collections.singletonMap(key, v.asInstanceOf[AbstractConfigValue])
@@ -255,8 +255,8 @@ final class SimpleConfigObject(
     }
     new SimpleConfigObject(
       origin,
-      newMap,
-      ResolveStatus.fromValues(newMap.values),
+      newMap.nn,
+      ResolveStatus.fromValues(newMap.nn.values),
       ignoresFallbacks
     )
   }
@@ -310,7 +310,7 @@ final class SimpleConfigObject(
 
   override def replaceChild(
       child: AbstractConfigValue,
-      replacement: AbstractConfigValue
+      replacement: AbstractConfigValue | Null
   ): SimpleConfigObject = {
     val newChildren = new ju.HashMap[String, AbstractConfigValue](value)
     newChildren.entrySet.asScala.find(_.getValue() eq child) match {
@@ -369,13 +369,13 @@ final class SimpleConfigObject(
     for (key <- allKeys.asScala) {
       val first = this.value.get(key)
       val second = fallback.value.get(key)
-      var kept: AbstractConfigValue = null
+      var kept: AbstractConfigValue | Null = null
       if (first == null) kept = second
       else if (second == null) kept = first
       else kept = first.withFallback(second)
       merged.put(key, kept)
       if (first ne kept) changed = true
-      if (kept.resolveStatus eq ResolveStatus.UNRESOLVED) allResolved = false
+      if (kept.nn.resolveStatus eq ResolveStatus.UNRESOLVED) allResolved = false
     }
     val newResolveStatus = ResolveStatus.fromBoolean(allResolved)
     val newIgnoresFallbacks = fallback.ignoresFallbacks
@@ -402,7 +402,7 @@ final class SimpleConfigObject(
 
   @throws[Exception]
   private def modifyMayThrow(modifier: AbstractConfigValue.Modifier) = {
-    var changes: ju.Map[String, AbstractConfigValue] = null
+    var changes: ju.Map[String, AbstractConfigValue] | Null = null // Discuss
     for (k <- keySet.asScala) {
       val v = value.get(k)
       // "modified" may be null, which means remove the child;
@@ -411,7 +411,7 @@ final class SimpleConfigObject(
       if (modified ne v) {
         if (changes == null)
           changes = new ju.HashMap[String, AbstractConfigValue]
-        changes.put(k, modified)
+        changes.nn.put(k, modified)
       }
     }
     if (changes == null) this
@@ -419,8 +419,8 @@ final class SimpleConfigObject(
       val modified = new ju.HashMap[String, AbstractConfigValue]
       var sawUnresolved = false
       for (k <- keySet.asScala) {
-        if (changes.containsKey(k)) {
-          val newValue = changes.get(k)
+        if (changes.nn.containsKey(k)) {
+          val newValue = changes.nn.get(k)
           if (newValue != null) {
             modified.put(k, newValue)
             if (newValue.resolveStatus eq ResolveStatus.UNRESOLVED)
@@ -471,9 +471,9 @@ final class SimpleConfigObject(
   override def relativized(prefix: Path): SimpleConfigObject =
     modify(new AbstractConfigValue.NoExceptionsModifier() {
       override def modifyChild(
-          key: String,
+          key: String | Null,
           v: AbstractConfigValue
-      ): AbstractConfigValue =
+      ): AbstractConfigValue | Null =
         v.relativized(prefix)
     })
 
@@ -499,8 +499,7 @@ final class SimpleConfigObject(
       //            val keys: Array[String] = keySet.toArray(new Array[String](size))
       //            ju.Arrays.sort(keys, new SimpleConfigObject.RenderComparator)
       for (k <- keys.asScala) {
-        var v: AbstractConfigValue = null
-        v = value.get(k)
+        var v: AbstractConfigValue = value.get(k)
         if (options.getOriginComments) {
           val lines = v.origin.description.split("\n")
           for (l <- lines) {

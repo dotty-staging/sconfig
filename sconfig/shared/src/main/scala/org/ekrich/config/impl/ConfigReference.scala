@@ -38,9 +38,9 @@ final class ConfigReference(
   override def resolveSubstitutions(
       context: ResolveContext,
       source: ResolveSource
-  ): ResolveResult[_ <: AbstractConfigValue] = {
+  ): ResolveResult[_ <: AbstractConfigValue | Null] = {
     var newContext = context.addCycleMarker(this)
-    var v: AbstractConfigValue = null
+    var v: AbstractConfigValue | Null = null
     try {
       val resultWithPath =
         source.lookupSubst(newContext, expression, prefixLength)
@@ -62,7 +62,7 @@ final class ConfigReference(
             "will recursively resolve against " + recursiveResolveSource
           )
         val result = newContext
-          .resolve(resultWithPath.result.value, recursiveResolveSource)
+          .resolve(resultWithPath.result.value.asInstanceOf[AbstractConfigValue], recursiveResolveSource)
         v = result.value
         newContext = result.context
       } else {
@@ -93,7 +93,7 @@ final class ConfigReference(
           origin,
           expression.toString
         )
-    else ResolveResult.make(newContext.removeCycleMarker(this), v)
+    else ResolveResult.make[AbstractConfigValue | Null](newContext.removeCycleMarker(this), v)
   }
   override def resolveStatus: ResolveStatus = ResolveStatus.UNRESOLVED
   // when you graft a substitution into another object,
@@ -103,7 +103,7 @@ final class ConfigReference(
   // broken.
   override def relativized(prefix: Path): ConfigReference = {
     val newExpr =
-      expression.changePath(expression.path.prepend(prefix))
+      expression.changePath(expression.path.prepend(prefix).nn)
     new ConfigReference(origin, newExpr, prefixLength + prefix.length)
   }
   override def canEqual(other: Any): Boolean =

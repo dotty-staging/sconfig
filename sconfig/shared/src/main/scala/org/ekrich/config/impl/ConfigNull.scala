@@ -23,7 +23,7 @@ final class ConfigNull(origin: ConfigOrigin)
     with Serializable {
   override def valueType: ConfigValueType = ConfigValueType.NULL
 
-  override def unwrapped: AnyRef = null
+  override def unwrapped: AnyRef | Null = null
 
   override def transformToString = "null"
 

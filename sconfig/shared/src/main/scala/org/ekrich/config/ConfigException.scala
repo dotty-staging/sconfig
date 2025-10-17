@@ -18,15 +18,15 @@ import org.ekrich.config.impl.ConfigImplUtil
  * All exceptions thrown by the library are subclasses of `ConfigException`.
  */
 @SerialVersionUID(1L)
-abstract class ConfigException(message: String, cause: Throwable)
+abstract class ConfigException(message: String, cause: Throwable | scala.Null)
     extends RuntimeException(message, cause)
     with Serializable {
-  @transient var origin: ConfigOrigin = null
+  @transient var origin: ConfigOrigin | Null = null
 
   protected def this(
-      origin: ConfigOrigin,
+      origin: ConfigOrigin | scala.Null,
       message: String,
-      cause: Throwable
+      cause: Throwable | scala.Null
   ) = {
     this(ConfigException.makeMessage(origin, message), cause)
     this.origin = origin
@@ -63,7 +63,7 @@ object ConfigException {
   private def setOriginField[T](
       hasOriginField: T,
       clazz: Class[_ <: Serializable],
-      origin: ConfigOrigin
+      origin: ConfigOrigin | scala.Null
   ): Unit = {
     // circumvent "final"
     val f: Field =
@@ -93,7 +93,7 @@ object ConfigException {
   /* this in Java would never purposely called with a null Origin but
         because of Scala's primary constructor constraints and the way these
         classes work we need to guard against null Origin */
-  private def makeMessage(origin: ConfigOrigin, message: String): String =
+  private def makeMessage(origin: ConfigOrigin | scala.Null, message: String): String =
     if (origin != null) origin.description + ": " + message else message
 
   /**
@@ -101,14 +101,14 @@ object ConfigException {
    * requested.
    */
   @SerialVersionUID(1L)
-  class WrongType(origin: ConfigOrigin, message: String, cause: Throwable)
+  class WrongType(origin: ConfigOrigin, message: String, cause: Throwable | scala.Null)
       extends ConfigException(origin, message, cause) {
     def this(
         origin: ConfigOrigin,
         path: String,
         expected: String,
         actual: String,
-        cause: Throwable
+        cause: Throwable | scala.Null
     ) =
       this(
         origin,
@@ -140,9 +140,9 @@ object ConfigException {
 
   // primary ctor calls super directly with no special message
   @SerialVersionUID(1L)
-  class Missing(origin: ConfigOrigin, message: String, cause: Throwable)
+  class Missing(origin: ConfigOrigin | scala.Null, message: String, cause: Throwable | scala.Null)
       extends ConfigException(origin, message, cause) {
-    def this(path: String, cause: Throwable) =
+    def this(path: String, cause: Throwable | scala.Null) =
       this(null, Missing.makeMessage(path), cause)
 
     def this(origin: ConfigOrigin, path: String) =
@@ -157,7 +157,7 @@ object ConfigException {
    */
   @SerialVersionUID(1L)
   object Null {
-    private def makeMessage(path: String, expected: String) =
+    private def makeMessage(path: String, expected: String | scala.Null) =
       if (expected != null)
         "Configuration key '" + path + "' is set to null but expected " + expected
       else "Configuration key '" + path + "' is null"
@@ -167,14 +167,14 @@ object ConfigException {
   class Null(
       origin: ConfigOrigin,
       path: String,
-      expected: String,
-      cause: Throwable
+      expected: String | scala.Null,
+      cause: Throwable | scala.Null
   ) extends ConfigException.Missing(
         origin,
         Null.makeMessage(path, expected),
         cause
       ) {
-    def this(origin: ConfigOrigin, path: String, expected: String) =
+    def this(origin: ConfigOrigin, path: String, expected: String | scala.Null) =
       this(origin, path, expected, null)
   }
 
@@ -183,22 +183,22 @@ object ConfigException {
    * asked for a duration and the value can't be sensibly parsed as a duration.
    */
   @SerialVersionUID(1L)
-  class BadValue(origin: ConfigOrigin, message: String, cause: Throwable)
+  class BadValue(origin: ConfigOrigin | scala.Null, message: String, cause: Throwable | scala.Null)
       extends ConfigException(origin, message, cause) {
     def this(
-        origin: ConfigOrigin,
+        origin: ConfigOrigin | scala.Null,
         path: String,
         message: String,
-        cause: Throwable
+        cause: Throwable | scala.Null
     ) =
       this(origin, "Invalid value at '" + path + "': " + message, cause)
 
-    def this(origin: ConfigOrigin, path: String, message: String) =
+    def this(origin: ConfigOrigin | scala.Null, path: String, message: String) =
       this(origin, path, message, null)
 
-    def this(path: String, message: String, cause: Throwable) =
+    def this(path: String, message: String, cause: Throwable | scala.Null) =
       this(
-        null: ConfigOrigin,
+        null: ConfigOrigin | scala.Null,
         "Invalid value at '" + path + "': " + message,
         cause
       )
@@ -211,13 +211,13 @@ object ConfigException {
    * quotes around path elements that contain "special" characters.
    */
   @SerialVersionUID(1L)
-  class BadPath(origin: ConfigOrigin, message: String, cause: Throwable)
+  class BadPath(origin: ConfigOrigin | scala.Null, message: String, cause: Throwable | scala.Null)
       extends ConfigException(origin, message, cause) {
     def this(
-        origin: ConfigOrigin,
-        path: String,
+        origin: ConfigOrigin | scala.Null,
+        path: String | scala.Null,
         message: String,
-        cause: Throwable
+        cause: Throwable | scala.Null
     ) =
       this(
         origin,
@@ -226,12 +226,12 @@ object ConfigException {
         cause
       )
 
-    def this(origin: ConfigOrigin, path: String, message: String) =
+    def this(origin: ConfigOrigin | scala.Null , path: String | scala.Null, message: String) =
       this(origin, path, message, null)
 
-    def this(path: String, message: String, cause: Throwable) =
+    def this(path: String | scala.Null, message: String, cause: Throwable | scala.Null) =
       this(
-        null: ConfigOrigin,
+        null: ConfigOrigin | scala.Null,
         if (path != null) "Invalid path '" + path + "': " + message
         else message,
         cause
@@ -239,7 +239,7 @@ object ConfigException {
 
     def this(path: String, message: String) = this(path, message, null)
 
-    def this(origin: ConfigOrigin, message: String) =
+    def this(origin: ConfigOrigin | scala.Null, message: String) =
       this(origin, null, message)
   }
 
@@ -250,7 +250,7 @@ object ConfigException {
    * occurring. This exception can be thrown by any method in the library.
    */
   @SerialVersionUID(1L)
-  class BugOrBroken(message: String, cause: Throwable)
+  class BugOrBroken(message: String, cause: Throwable | scala.Null)
       extends ConfigException(message, cause) {
     def this(message: String) = this(message, null)
   }
@@ -259,7 +259,7 @@ object ConfigException {
    * Exception indicating that there was an IO error.
    */
   @SerialVersionUID(1L)
-  class IO(origin: ConfigOrigin, message: String, cause: Throwable)
+  class IO(origin: ConfigOrigin, message: String, cause: Throwable | scala.Null)
       extends ConfigException(origin, message, cause) {
     def this(origin: ConfigOrigin, message: String) =
       this(origin, message, null)
@@ -269,7 +269,7 @@ object ConfigException {
    * Exception indicating that there was a parse error.
    */
   @SerialVersionUID(1L)
-  class Parse(origin: ConfigOrigin, message: String, cause: Throwable)
+  class Parse(origin: ConfigOrigin, message: String, cause: Throwable | scala.Null)
       extends ConfigException(origin, message, cause) {
     def this(origin: ConfigOrigin, message: String) =
       this(origin, message, null)
@@ -283,7 +283,7 @@ object ConfigException {
   class UnresolvedSubstitution(
       origin: ConfigOrigin,
       detail: String,
-      cause: Throwable
+      cause: Throwable | scala.Null
   ) extends ConfigException.Parse(
         origin,
         "Could not resolve substitution to a value: " + detail,
@@ -301,7 +301,7 @@ object ConfigException {
    * avoid it by adding calls to [[Config!.resolve()* resolve()]].
    */
   @SerialVersionUID(1L)
-  class NotResolved(message: String, cause: Throwable)
+  class NotResolved(message: String, cause: Throwable | scala.Null)
       extends ConfigException.BugOrBroken(message, cause) {
     def this(message: String) = this(message, null)
   }
@@ -314,7 +314,7 @@ object ConfigException {
   @SerialVersionUID(1L)
   class ValidationProblem(
       val path: String, // the path of the problem setting
-      @transient val origin: ConfigOrigin =
+      @transient val origin: ConfigOrigin | scala.Null =
         null, // the origin of the problem setting
       val problem: String
   ) // description of the problem
@@ -353,7 +353,7 @@ object ConfigException {
       val sb = new StringBuilder
       import scala.jdk.CollectionConverters._
       for (p <- problems.asScala) {
-        sb.append(p.origin.description)
+        sb.append(p.origin.nn.description)
         sb.append(": ")
         sb.append(p.path)
         sb.append(": ")
@@ -379,7 +379,7 @@ object ConfigException {
    * @since 1.3.0
    */
   @SerialVersionUID(1L)
-  class BadBean(message: String, cause: Throwable)
+  class BadBean(message: String, cause: Throwable | scala.Null)
       extends ConfigException.BugOrBroken(message, cause) {
     def this(message: String) = this(message, null)
   }
@@ -388,7 +388,7 @@ object ConfigException {
    * Exception that doesn't fall into any other category.
    */
   @SerialVersionUID(1L)
-  class Generic(message: String, cause: Throwable)
+  class Generic(message: String, cause: Throwable | scala.Null)
       extends ConfigException(message, cause) {
     def this(message: String) = this(message, null)
   }

@@ -31,7 +31,7 @@ object PropertiesParser {
   private[impl] def pathFromPropertyKey(key: String) = {
     var last = lastElement(key)
     var exceptLast = exceptLastElement(key)
-    var path = new Path(last, null: Path)
+    var path = new Path(last, null: Path | Null)
     while ({ exceptLast != null }) {
       last = lastElement(exceptLast)
       exceptLast = exceptLastElement(exceptLast)
@@ -146,7 +146,7 @@ object PropertiesParser {
         if (parentPath != null) scopes.get(parentPath) else root
       val last = path.last
       val rawValue = pathMap.get(path)
-      var value: AbstractConfigValue = null
+      var value: AbstractConfigValue | Null = null
       if (convertedFromProperties) {
         if (rawValue.isInstanceOf[String]) {
           value = new ConfigString.Quoted(origin, rawValue.asInstanceOf[String])

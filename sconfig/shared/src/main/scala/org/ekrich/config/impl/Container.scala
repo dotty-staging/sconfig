@@ -20,8 +20,8 @@ trait Container extends ConfigValue {
    */
   def replaceChild(
       child: AbstractConfigValue,
-      replacement: AbstractConfigValue
-  ): AbstractConfigValue
+      replacement: AbstractConfigValue | Null
+  ): AbstractConfigValue | Null
 
   /**
    * Super-expensive full traversal to see if descendant is anywhere underneath

@@ -533,7 +533,7 @@ object ConfigFactory {
    * @return
    *   an empty configuration
    */
-  def empty(originDescription: String): Config =
+  def empty(originDescription: String | Null): Config =
     ConfigImpl.emptyConfig(originDescription)
 
   /**
@@ -1086,7 +1086,7 @@ object ConfigFactory {
    * @return
    *   the map converted to a [[Config]]
    */
-  def parseMap(values: ju.Map[String, _], originDescription: String): Config =
+  def parseMap(values: ju.Map[String, _], originDescription: String | Null): Config =
     ConfigImpl.fromPathMap(values, originDescription).toConfig
 
   /**

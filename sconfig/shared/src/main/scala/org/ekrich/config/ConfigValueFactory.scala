@@ -60,7 +60,7 @@ object ConfigValueFactory {
    * @return
    *   a new value
    */
-  def fromAnyRef(obj: Object, originDescription: String): ConfigValue =
+  def fromAnyRef(obj: Object, originDescription: String | Null): ConfigValue =
     ConfigImpl.fromAnyRef(obj, originDescription)
 
   /**
@@ -91,7 +91,7 @@ object ConfigValueFactory {
    */
   def fromMap(
       values: ju.Map[String, _],
-      originDescription: String
+      originDescription: String | Null
   ): ConfigObject =
     fromAnyRef(values, originDescription).asInstanceOf[ConfigObject]
 
@@ -111,7 +111,7 @@ object ConfigValueFactory {
    */
   def fromIterable(
       values: jl.Iterable[_],
-      originDescription: String
+      originDescription: String | Null
   ): ConfigList =
     fromAnyRef(values, originDescription).asInstanceOf[ConfigList]
 

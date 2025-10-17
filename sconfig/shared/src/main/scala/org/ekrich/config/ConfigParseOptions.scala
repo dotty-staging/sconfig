@@ -29,11 +29,11 @@ object ConfigParseOptions {
 }
 
 final class ConfigParseOptions private (
-    val syntax: ConfigSyntax,
-    val originDescription: String,
+    val syntax: ConfigSyntax | Null,
+    val originDescription: String | Null,
     val allowMissing: Boolean,
-    val includer: ConfigIncluder,
-    val classLoader: ClassLoader
+    val includer: ConfigIncluder | Null,
+    val classLoader: ClassLoader | Null
 ) {
 
   /**
@@ -45,7 +45,7 @@ final class ConfigParseOptions private (
    * @return
    *   options with the syntax set
    */
-  def setSyntax(syntax: ConfigSyntax): ConfigParseOptions =
+  def setSyntax(syntax: ConfigSyntax | Null): ConfigParseOptions =
     if (this.syntax == syntax) this
     else
       new ConfigParseOptions(
@@ -75,7 +75,7 @@ final class ConfigParseOptions private (
    * @return
    *   the current syntax or null
    */
-  def getSyntax: ConfigSyntax = syntax
+  def getSyntax: ConfigSyntax | Null = syntax
 
   /**
    * Set a description for the thing being parsed. In most cases this will be
@@ -89,7 +89,7 @@ final class ConfigParseOptions private (
    * @return
    *   options with the origin description set
    */
-  def setOriginDescription(originDescription: String): ConfigParseOptions = { // findbugs complains about == here but is wrong, do not "fix"
+  def setOriginDescription(originDescription: String | Null): ConfigParseOptions = { // findbugs complains about == here but is wrong, do not "fix"
     if (this.originDescription == originDescription)
       this
     else if (this.originDescription != null && originDescription != null && this.originDescription == originDescription)
@@ -110,7 +110,7 @@ final class ConfigParseOptions private (
    * @return
    *   the current origin description or null
    */
-  def getOriginDescription: String = originDescription
+  def getOriginDescription: String | Null = originDescription
 
   /** this is package-private, not public API */
   private[config] def withFallbackOriginDescription(originDescription: String) =
@@ -220,7 +220,7 @@ final class ConfigParseOptions private (
    * @return
    *   current includer or null
    */
-  def getIncluder: ConfigIncluder = includer
+  def getIncluder: ConfigIncluder | Null = includer
 
   /**
    * Set the class loader. If set to null,

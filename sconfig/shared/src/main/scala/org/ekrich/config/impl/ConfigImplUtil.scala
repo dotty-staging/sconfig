@@ -22,7 +22,7 @@ import org.ekrich.config.ConfigSyntax
  * the {@link org.ekrich.config} package.
  */
 object ConfigImplUtil {
-  def equalsHandlingNull(a: AnyRef, b: AnyRef) =
+  def equalsHandlingNull(a: AnyRef | Null, b: AnyRef | Null) =
     if (a == null && b != null) false
     else if (a != null && b == null) false
     else if (a eq b) {
@@ -170,7 +170,7 @@ object ConfigImplUtil {
   def joinPath(elements: ju.List[String]): String =
     joinPath(elements.asScala.toSeq: _*)
   def splitPath(path: String): ju.List[String] = {
-    var p = Path.newPath(path)
+    var p: Path | Null = Path.newPath(path)
     val elements = new ju.ArrayList[String]
     while (p != null) {
       elements.add(p.first)
@@ -183,7 +183,7 @@ object ConfigImplUtil {
     SerializedConfigValue.readOrigin(in, null)
 
   @throws[IOException]
-  def writeOrigin(out: ObjectOutputStream, origin: ConfigOrigin): Unit =
+  def writeOrigin(out: ObjectOutputStream, origin: ConfigOrigin | Null): Unit =
     SerializedConfigValue.writeOrigin(
       new DataOutputStream(out),
       origin.asInstanceOf[SimpleConfigOrigin],
@@ -211,7 +211,7 @@ object ConfigImplUtil {
    * @return
    *   configuration syntax if a match is found. Otherwise, null.
    */
-  def syntaxFromExtension(filename: String): ConfigSyntax =
+  def syntaxFromExtension(filename: String): ConfigSyntax | Null =
     if (filename == null) null
     else if (filename.endsWith(".json")) ConfigSyntax.JSON
     else if (filename.endsWith(".conf")) ConfigSyntax.CONF

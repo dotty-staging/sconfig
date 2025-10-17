@@ -62,7 +62,7 @@ object DefaultTransformer {
         // case NUMBER => // FALL THROUGH
         case NUMBER | BOOLEAN =>
           retVal =
-            new ConfigString.Quoted(value.origin, value.transformToString)
+            new ConfigString.Quoted(value.origin, value.transformToString.nn)
         case NULL | OBJECT | LIST | STRING => ()
         // want to be sure this throws instead of returning "null" as a string
         // no OBJECT to STRING automatically

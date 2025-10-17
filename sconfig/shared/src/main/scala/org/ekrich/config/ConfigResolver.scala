@@ -22,7 +22,7 @@ trait ConfigResolver {
    * @return
    *   the value to use as a substitution or null
    */
-  def lookup(path: String): ConfigValue
+  def lookup(path: String): ConfigValue | Null
 
   /**
    * Returns a new resolver that falls back to the given resolver if this one

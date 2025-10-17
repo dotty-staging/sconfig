@@ -14,7 +14,7 @@ object ConfigNumber {
   private[impl] def newNumber( // used ?
       origin: ConfigOrigin,
       number: Long,
-      originalText: String
+      originalText: String | Null
   ): ConfigNumber =
     if (number <= Integer.MAX_VALUE && number >= Integer.MIN_VALUE)
       new ConfigInt(origin, number.toInt, originalText)
@@ -23,7 +23,7 @@ object ConfigNumber {
   def newNumber(
       origin: ConfigOrigin,
       number: Double,
-      originalText: String
+      originalText: String | Null
   ): ConfigNumber = {
     val asLong = number.toLong
     if (asLong == number) newNumber(origin, asLong, originalText)
@@ -38,12 +38,12 @@ abstract class ConfigNumber(
     // a sentence) we always have it exactly as the person typed it into the
     // config file. It's purely cosmetic; equals/hashCode don't consider this
     // for example.
-    val originalText: String
+    val originalText: String | Null
 ) extends AbstractConfigValue(_origin)
     with Serializable {
   override def unwrapped: Number
 
-  override def transformToString: String = originalText
+  override def transformToString: String | Null = originalText
 
   private[impl] def intValueRangeChecked(path: String) = {
     val l = longValue

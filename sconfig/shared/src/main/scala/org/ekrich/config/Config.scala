@@ -614,7 +614,7 @@ trait Config extends ConfigMergeable {
    * @throws ConfigException.Missing
    *   if value is absent or null
    */
-  def getAnyRef(path: String): AnyRef
+  def getAnyRef(path: String): AnyRef | Null
 
   /**
    * Gets the value at the given path, unless the value is a null value or

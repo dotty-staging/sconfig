@@ -20,9 +20,9 @@ object SimpleConfigList {
   ) extends AbstractConfigValue.Modifier {
     @throws[AbstractConfigValue.NotPossibleToResolve]
     override def modifyChildMayThrow(
-        key: String,
+        key: String | Null,
         v: AbstractConfigValue
-    ): AbstractConfigValue = {
+    ): AbstractConfigValue | Null = {
       val result = context.resolve(v, source)
       context = result.context
       result.value
@@ -84,8 +84,8 @@ final class SimpleConfigList(
     ResolveStatus.fromBoolean(resolved)
   override def replaceChild(
       child: AbstractConfigValue,
-      replacement: AbstractConfigValue
-  ): SimpleConfigList = {
+      replacement: AbstractConfigValue | Null
+  ): SimpleConfigList | Null = {
     val newList =
       AbstractConfigValue.replaceChildInList(value, child, replacement)
     if (newList == null) null
@@ -110,10 +110,10 @@ final class SimpleConfigList(
   @throws[Exception]
   private def modifyMayThrow(
       modifier: AbstractConfigValue.Modifier,
-      newResolveStatus: ResolveStatus
+      newResolveStatus: ResolveStatus | Null
   ): SimpleConfigList = {
     // lazy-create for optimization
-    var changed: ju.List[AbstractConfigValue] = null
+    var changed: ju.List[AbstractConfigValue] | Null = null // Discuss
     var i = 0
     for (v <- value.asScala) {
       val modified = modifier.modifyChildMayThrow(null /* key */, v)
@@ -122,20 +122,20 @@ final class SimpleConfigList(
         changed = new ju.ArrayList[AbstractConfigValue]
         var j = 0
         while (j < i) {
-          changed.add(value.get(j))
+          changed.nn.add(value.get(j))
           j += 1
         }
       }
       // once the new list is created, all elements
       // have to go in it. if modifyChild returned
       // null, we drop that element.
-      if (changed != null && modified != null) changed.add(modified)
+      if (changed != null && modified != null) changed.nn.add(modified)
       i += 1
     }
     if (changed != null)
       if (newResolveStatus != null)
-        new SimpleConfigList(origin, changed, newResolveStatus)
-      else new SimpleConfigList(origin, changed)
+        new SimpleConfigList(origin, changed.nn, newResolveStatus)
+      else new SimpleConfigList(origin, changed.nn)
     else this
   }
   @throws[AbstractConfigValue.NotPossibleToResolve]
@@ -173,9 +173,9 @@ final class SimpleConfigList(
     modify(
       new NoExceptionsModifier() {
         override def modifyChild(
-            key: String,
+            key: String | Null,
             v: AbstractConfigValue
-        ): AbstractConfigValue =
+        ): AbstractConfigValue | Null =
           v.relativized(prefix)
       },
       resolveStatus

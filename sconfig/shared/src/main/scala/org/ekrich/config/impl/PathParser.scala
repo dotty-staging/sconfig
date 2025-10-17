@@ -27,7 +27,7 @@ object PathParser {
     parsePathNode(path, ConfigSyntax.CONF)
   private[impl] def parsePathNode(
       path: String,
-      flavor: ConfigSyntax
+      flavor: ConfigSyntax | Null
   ): ConfigNodePath = {
     val reader = new StringReader(path)
     try {
@@ -75,8 +75,8 @@ object PathParser {
   protected def parsePathNodeExpression(
       expression: ju.Iterator[Token],
       origin: ConfigOrigin,
-      originalText: String,
-      flavor: ConfigSyntax
+      originalText: String | Null,
+      flavor: ConfigSyntax | Null
   ): ConfigNodePath = {
     val pathTokens = new ju.ArrayList[Token]
     val path =
@@ -87,9 +87,9 @@ object PathParser {
   protected def parsePathExpression(
       expression: ju.Iterator[Token],
       origin: ConfigOrigin,
-      originalText: String,
-      pathTokens: ju.ArrayList[Token],
-      flavor: ConfigSyntax
+      originalText: String | Null,
+      pathTokens: ju.ArrayList[Token] | Null,
+      flavor: ConfigSyntax | Null
   ): Path = {
     // each builder in "buf" is an element in the path.
     val buf = new ju.ArrayList[PathParser.Element]
@@ -113,7 +113,7 @@ object PathParser {
           val v = Tokens.getValue(t)
           // this is a quoted string; so any periods
           // in here don't count as path separators
-          val s = v.transformToString
+          val s = v.transformToString.nn
           addPathText(buf, true, s)
         } else if (t eq Tokens.END) {
           // ignore this; when parsing a file, it should not happen
@@ -122,7 +122,7 @@ object PathParser {
           // API, it's expected to have an END.
         } else {
           // any periods outside of a quoted string count as separators
-          var text: String = null
+          var text: String | Null = null
           if (Tokens.isValue(t)) {
             // appending a number here may add
             // a period, but we _do_ count those as path
@@ -154,7 +154,7 @@ object PathParser {
                 " (you can double-quote this token if you really want it here)"
             )
           }
-          addPathText(buf, false, text)
+          addPathText(buf, false, text.nn)
         }
       }
     }
@@ -169,14 +169,14 @@ object PathParser {
         )
       else pb.appendKey(e.sb.toString)
     }
-    return pb.result
+    return pb.result.nn
   }
 
   private def splitTokenOnPeriod(
       t: Token,
-      flavor: ConfigSyntax
+      flavor: ConfigSyntax | Null
   ): ju.List[Token] = {
-    val tokenText: String = t.tokenText
+    val tokenText: String = t.tokenText.nn
     if (tokenText == ".") return ju.Collections.singletonList(t)
     val splitToken = tokenText.split("\\.")
     val splitTokens = new ju.ArrayList[Token]
@@ -264,7 +264,7 @@ object PathParser {
     else false
   }
 
-  private def fastPathBuild(tail: Path, s: String, end: Int): Path = {
+  private def fastPathBuild(tail: Path | Null, s: String, end: Int): Path = {
     // lastIndexOf takes last index it should look at, end - 1 not end
     val splitAt = s.lastIndexOf('.', end - 1)
     // this works even if splitAt is -1; then we start the substring at 0
@@ -278,7 +278,7 @@ object PathParser {
 
   // do something much faster than the full parser if
   // we just have something like "foo" or "foo.bar"
-  private def speculativeFastParsePath(path: String): Path = {
+  private def speculativeFastParsePath(path: String): Path | Null = {
     val s = ConfigImplUtil.unicodeTrim(path)
     if (looksUnsafeForFastParser(s)) null
     else fastPathBuild(null, s, s.length)

@@ -13,7 +13,7 @@ import org.ekrich.config.ConfigValueType
 final class ConfigLong(
     origin: ConfigOrigin,
     val value: Long,
-    originalText: String
+    originalText: String | Null
 ) extends ConfigNumber(origin, originalText)
     with Serializable {
   override def valueType: ConfigValueType = ConfigValueType.NUMBER
