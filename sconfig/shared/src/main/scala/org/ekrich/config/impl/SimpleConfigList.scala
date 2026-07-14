@@ -267,7 +267,7 @@ final class SimpleConfigList(
     list
   }
   override def toArray: Array[Object] = value.toArray
-  override def toArray[T](a: Array[T with Object]): Array[T with Object] =
+  override def toArray[T](a: Array[T & Object]): Array[T & Object] =
     value.toArray[T](a)
   override def add(e: ConfigValue) =
     throw SimpleConfigList.weAreImmutable("add")
